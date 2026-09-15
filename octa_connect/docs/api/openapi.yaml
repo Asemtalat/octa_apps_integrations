@@ -1,0 +1,88 @@
+openapi: 3.0.3
+info:
+  title: Octa Connect Hub API (Gate A/B - نسخة أولية)
+  version: "1.0.0-gate-b"
+  description: >
+    عقد أولي موثّق (القسم 9). هذا العقد لم يُختبر ضد أي تطبيق توصيل حقيقي؛
+    اختباره الوحيد الفعلي كان ضد octa_hub_connector_demo (محاكٍ) وtools/mock_pos
+    (انظر docs/test-report.md). لا يمثل اعتماد أي قناة فعلية.
+servers:
+  - url: https://{tenant}.octaconnect.example/api/v1
+    variables:
+      tenant:
+        default: demo
+paths:
+  /orders:
+    post:
+      summary: استقبال حدث طلب من موصل (Webhook ingress)
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema: { type: string }
+          description: مفتاح منع تكرار اختياري يوفره المصدر إن دعمه عقده.
+        - name: X-Correlation-Id
+          in: header
+          required: false
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderEventIn"
+      responses:
+        "201":
+          description: تم حفظ الحدث والطلب ذريًا (stored)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderEventAck" }
+        "200":
+          description: مكرر معروف أو تعارض غير حاسم — راجع الحقل status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderEventAck" }
+        "401":
+          description: مفتاح API غير صالح أو موقوف (لا يُكشف السبب الدقيق)
+        "409":
+          description: تعارض idempotency-key بمحتوى مختلف
+        "422":
+          description: خطأ تحقق من البيانات (validation_error)
+        "429":
+          description: تجاوز حد المعدل — راجع Retry-After
+  /orders/{external_order_id}:
+    get:
+      summary: استعلام لتأكيد حالة تسجيل طلب (لحالة انقطاع الرد)
+      parameters:
+        - name: external_order_id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: الطلب موجود
+        "404":
+          description: غير موجود (وليس دليلًا على عدم التسجيل لدى POS — راجع transport_state)
+components:
+  schemas:
+    OrderEventIn:
+      type: object
+      required: [external_order_id, contract_version, items, total_minor_units, currency]
+      properties:
+        external_order_id: { type: string }
+        contract_version: { type: string, example: "octa-connect-order-v1" }
+        items: { type: array, items: { type: object } }
+        total_minor_units: { type: integer, description: "integer minor units، لا float" }
+        currency: { type: string, example: "SAR" }
+    OrderEventAck:
+      type: object
+      properties:
+        status: { type: string, enum: [stored, duplicate_or_existing, duplicate_concurrent] }
+        order_id: { type: integer }
+        correlation_id: { type: string }
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+security:
+  - bearerAuth: []

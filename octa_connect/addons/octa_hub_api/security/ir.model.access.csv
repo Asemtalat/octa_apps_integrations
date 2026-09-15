@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_outbox_item_octatech_integration,outbox_item.octatech.integration,model_octa_hub_outbox_item,octa_hub_core.group_octatech_integration,1,1,1,0
+access_outbox_item_octatech_identity,outbox_item.octatech.identity,model_octa_hub_outbox_item,octa_hub_core.group_octatech_identity_admin,1,1,1,1
+access_outbox_item_merchant_owner,outbox_item.merchant.owner,model_octa_hub_outbox_item,octa_hub_core.group_merchant_owner,1,0,0,0

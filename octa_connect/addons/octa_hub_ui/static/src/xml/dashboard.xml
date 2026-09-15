@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+  <t t-name="octa_hub_ui.Dashboard">
+    <div class="o_octa_app o_octa_main" dir="rtl">
+      <t t-if="env.services &amp;&amp; env.services.octa_env === 'sandbox'">
+        <div class="o_octa_env_banner">بيئة اختبار — لا بيانات إنتاج حقيقية</div>
+      </t>
+
+      <h2 class="o_octa_page_title">النظرة العامة</h2>
+
+      <OctaErrorState t-if="state.error" message="state.error"/>
+      <OctaLoadingState t-elif="state.loading"/>
+
+      <t t-elif="!hasReceivedFirstOrderEver">
+        <!-- Blueprint P70: حالة صريحة منفصلة، وليست صفرًا أخضر يوحي بالصحة -->
+        <OctaEmptyState message="'لم يصل أول طلب بعد'" actionLabel="'اختبار الربط الآن'"/>
+      </t>
+
+      <t t-else="">
+        <div t-if="state.stale" class="o_octa_status_badge o_status_warning" style="margin-bottom: 12px;">
+          <span class="o_octa_status_dot"/>
+          <span>قد تكون البيانات غير محدّثة — آخر تحديث: <t t-esc="state.lastUpdatedAt"/></span>
+        </div>
+
+        <!-- أربع قيم فقط (القسم 9)، كل قيمة تحمل الفترة وتعريف القياس -->
+        <div class="o_octa_metrics_row">
+          <OctaMetricCard label="'الطلبات المستلمة'" value="state.metrics.received_count" period="'آخر 24 ساعة'"/>
+          <OctaMetricCard label="'المسجّلة لدى نظام العميل'" value="state.metrics.registered_confirmed_count" period="'آخر 24 ساعة'"/>
+          <OctaMetricCard label="'تحتاج تدخلًا'" value="state.metrics.needs_intervention_count_all_time" period="'كل الأوقات — غير مقيَّد بـ24 ساعة، انظر R14'"/>
+          <OctaMetricCard label="'زمن النقل (p95)'" value="state.metrics.transport_p95_seconds" period="'آخر 24 ساعة، بالثواني'"/>
+        </div>
+
+        <!-- إصلاح بعد مراجعة عاشرة (OC05-17): كان الـbackend يحسب median
+             وp99 وحجم العينة ونسبة الاكتمال ولا تعرضهم الواجهة إطلاقًا رغم
+             أن البند يشترط عرضهم صراحة — لا مؤشر بلا حجم عينة واكتمال بيانات. -->
+        <div class="o_octa_metric_detail_row" t-if="state.metrics.transport_p95_seconds !== null">
+          <span>median: <t t-esc="state.metrics.transport_median_seconds"/>ث</span>
+          <span> · p99: <t t-esc="state.metrics.transport_p99_seconds"/>ث</span>
+          <span> · حجم العينة: <t t-esc="state.metrics.transport_p95_sample_count"/></span>
+          <span> · اكتمال البيانات: <t t-esc="Math.round(state.metrics.transport_p95_completeness * 100)"/>%</span>
+        </div>
+
+        <h3>الاستثناءات</h3>
+        <table class="o_octa_table" t-if="state.exceptions.length">
+          <thead>
+            <tr>
+              <th>السبب</th><th>عدد العناصر</th><th>المسؤول</th><th>العمر</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr t-foreach="state.exceptions" t-as="exc" t-key="exc.id">
+              <td t-esc="exc.reason"/>
+              <td t-esc="exc.count"/>
+              <td t-esc="exc.owner"/>
+              <td t-esc="exc.age"/>
+              <td><OctaStatusBadge kind="exc.severity" label="exc.severity_label"/></td>
+            </tr>
+          </tbody>
+        </table>
+        <OctaEmptyState t-else="" message="'لا توجد استثناءات مفتوحة حاليًا'"/>
+      </t>
+    </div>
+  </t>
+
+</templates>

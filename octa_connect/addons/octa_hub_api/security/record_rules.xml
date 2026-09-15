@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- عزل tenant لعناصر الطابور (R13) — النموذج جديد هذه الجولة، لم يكن
+     موجودًا في الجولات السابقة، فلا "نسيان" قديم هنا بل تغطية من البداية. -->
+<odoo>
+    <record id="rule_outbox_item_merchant_scope" model="ir.rule">
+        <field name="name">OutboxItem: ضمن نطاق عميل العضوية عبر الطلب الأب</field>
+        <field name="model_id" ref="model_octa_hub_outbox_item"/>
+        <field name="domain_force">[
+            ('order_id.organization_id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'), ('active', '=', True)
+            ]).mapped('organization_id').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('octa_hub_core.group_merchant_owner'))]"/>
+    </record>
+</odoo>

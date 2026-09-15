@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NOT RUN — قوالب QWeb مبدئية فقط لصفحات الدعوة/التفعيل. التصميم الكامل
+     (design tokens، RTL/LTR، حالات التحميل والخطأ) في octa_hub_ui، هذه
+     صفحات ما قبل تسجيل الدخول فقط ومقصود إبقاؤها بسيطة. -->
+<odoo>
+    <template id="invite_invalid_page" name="Invite Invalid">
+        <t t-call="web.layout">
+            <div class="o_octa_invite_page" dir="rtl">
+                <h3>الرابط غير صالح أو منتهي الصلاحية</h3>
+                <p>تواصل مع فريق أوكتاتيك لإعادة إصدار دعوة جديدة.</p>
+            </div>
+        </t>
+    </template>
+
+    <template id="invite_accept_form" name="Invite Accept Form">
+        <t t-call="web.layout">
+            <div class="o_octa_invite_page" dir="rtl">
+                <h3>إكمال التفعيل</h3>
+                <form method="post" action="/octa/invite/accept">
+                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                    <input type="hidden" name="token" t-att-value="request.params.get('token')"/>
+                    <p>البريد: <span t-esc="email"/></p>
+                    <label>كلمة المرور</label>
+                    <input type="password" name="password" required="required"/>
+                    <label>تأكيد كلمة المرور</label>
+                    <input type="password" name="password_confirm" required="required"/>
+                    <button type="submit">تأكيد</button>
+                </form>
+            </div>
+        </t>
+    </template>
+
+    <template id="invite_accepted_page" name="Invite Accepted">
+        <t t-call="web.layout">
+            <div class="o_octa_invite_page" dir="rtl">
+                <h3>تم تفعيل الحساب</h3>
+                <p>يمكنك الآن تسجيل الدخول بالبريد <span t-esc="email"/>.</p>
+            </div>
+        </t>
+    </template>
+
+    <template id="password_reset_requested_page" name="Password Reset Requested">
+        <!-- إصلاح بعد مراجعة قبول نهائية: صفحة رد ثابتة لا تكشف وجود
+             الحساب من عدمه (نفس الرسالة دائمًا، بصرف النظر عن وجود البريد
+             فعليًا في قاعدة البيانات) — تدعم مسار /octa/password_reset/request
+             الجديد في auth_controller.py. -->
+        <t t-call="web.layout">
+            <div class="o_octa_invite_page" dir="rtl">
+                <h3>تحقق من بريدك الإلكتروني</h3>
+                <p>إن كان البريد الذي أدخلته مرتبطًا بحساب، فستصلك رسالة تحتوي
+                   رابط استعادة كلمة المرور خلال دقائق.</p>
+            </div>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+  <t t-name="octa_hub_ui.OrderDetail">
+    <div class="o_octa_app o_octa_main" dir="rtl">
+      <OctaErrorState t-if="state.error" message="state.error"/>
+      <OctaLoadingState t-elif="state.loading"/>
+
+      <t t-else="">
+        <!-- ملخص ثابت (Blueprint P74) -->
+        <div class="o_octa_metric_card" style="margin-bottom: 16px;">
+          <div class="o_octa_ltr_isolate" style="font-weight:700;" t-esc="state.order.external_order_id"/>
+          <div t-esc="state.order.branch_id[1]"/>
+          <div t-esc="state.order.connection_id[1]"/>
+          <div style="margin-top:8px;">
+            <OctaStatusBadge kind="state.order.transport_state === 'registered_confirmed' ? 'success' : (state.order.transport_state === 'needs_intervention' ? 'danger' : 'warning')"
+                              label="transportMessage"/>
+          </div>
+        </div>
+
+        <!-- تبويبات: الأصناف والمبالغ / الأحداث / محاولات التوصيل / معلومات الربط -->
+        <div class="o_octa_tabs">
+          <button t-on-click="() => this.setTab('items')" t-att-class="state.activeTab === 'items' ? 'active' : ''">الأصناف والمبالغ</button>
+          <button t-on-click="() => this.setTab('events')" t-att-class="state.activeTab === 'events' ? 'active' : ''">الأحداث</button>
+          <button t-on-click="() => this.setTab('attempts')" t-att-class="state.activeTab === 'attempts' ? 'active' : ''">محاولات التوصيل</button>
+          <button t-on-click="() => this.setTab('connection')" t-att-class="state.activeTab === 'connection' ? 'active' : ''">معلومات الربط</button>
+        </div>
+
+        <div t-if="state.activeTab === 'items'">
+          <p class="o_octa_ltr_isolate">الإجمالي: <t t-esc="state.order.total_minor_units / 100"/></p>
+          <!-- البيانات الشخصية مخفية جزئيًا حسب الدور (Blueprint P74) — التحكم
+               الفعلي يتم سيرفريًا، هذا فقط مكان العرض -->
+        </div>
+
+        <div t-if="state.activeTab === 'events'">
+          <!-- إصلاح (R15): كانت تمرر state.order.event_ids مباشرة (قائمة
+               IDs خام)، لا سجلات محوَّلة — أُصلح باستخدام state.timelineItems
+               المُجهَّزة فعليًا في order_detail.js::_load(). -->
+          <OctaTimeline items="state.timelineItems"/>
+        </div>
+
+        <div t-if="state.activeTab === 'attempts'">
+          <!-- إصلاح (R15): كان هذا نصًا وصفيًا ثابتًا فقط، لا بيانات محاولات
+               فعلية. الآن يعرض state.attempts الحقيقية (قد تكون فارغة). -->
+          <table class="o_octa_table" t-if="state.attempts.length">
+            <thead>
+              <tr><th>المحاولة</th><th>حالة HTTP</th><th>النتيجة</th><th>البدء</th><th>الانتهاء</th></tr>
+            </thead>
+            <tbody>
+              <tr t-foreach="state.attempts" t-as="att" t-key="att.id">
+                <td class="o_octa_ltr_isolate" t-esc="att.attempt_id"/>
+                <td class="o_octa_ltr_isolate" t-esc="att.http_status || '—'"/>
+                <td t-esc="att.result_code || 'غير متاح'"/>
+                <td class="o_octa_ltr_isolate" t-esc="att.started_at || 'غير متاح'"/>
+                <td class="o_octa_ltr_isolate" t-esc="att.finished_at || 'غير متاح'"/>
+              </tr>
+            </tbody>
+          </table>
+          <p t-else="">لا محاولات إرسال مسجَّلة لهذا الطلب بعد.</p>
+        </div>
+
+        <div t-if="state.activeTab === 'connection'">
+          <p t-esc="state.order.connection_id[1]"/>
+        </div>
+
+        <button class="btn btn-secondary" t-on-click="openSupportTicket">فتح تذكرة دعم</button>
+      </t>
+    </div>
+  </t>
+</templates>

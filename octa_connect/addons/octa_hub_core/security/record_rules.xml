@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  عزل tenant/branch إلزامي عبر Record Rules — القسم 6: "كل العلاقات بين
+  السجلات تتحقق من تطابق tenant والفرع، لا تكتفِ بقواعد البحث" و"اجعل قيود
+  tenant والفروع إلزامية لا تتوسع بسبب اتحاد مجموعات الصلاحيات".
+
+  تصحيح حرج بعد مراجعة V2 المستقلة (كانت التعليقات هنا خاطئة، صُحِّحت بعد
+  التحقق المباشر من odoo/addons/base/models/ir_rule.py::_compute_domain في
+  Odoo 19 الحقيقي): **كل** القواعد المرتبطة بمجموعات (group_domains) — بصرف
+  النظر عن كونها لنفس المجموعة أو لمجموعات مختلفة تمامًا — تُجمَع في قائمة
+  واحدة وتُدمَج بـOR فيما بينها جميعًا، ثم تُدمَج هذه النتيجة بـAND فقط مع
+  القواعد "العامة" (بلا groups إطلاقًا). التعليق السابق هنا كان يدّعي أن
+  القواعد بين مجموعات مختلفة تتحد بـAND — **هذا غير صحيح**، والتصحيح موثَّق
+  بالكود الحقيقي أعلاه (`if rule.groups: group_domains.append(dom) ... if
+  group_domains: global_domains.append(Domain.OR(group_domains))`).
+
+  الأثر العملي — **أُغلِق الآن**: مستخدم بعضوية تاجر متعددة الأدوار (owner
+  + branch_manager معًا لعميل واحد) كان سيرى نتيجة OR الأوسع بين
+  rule_branch_merchant_scope (نطاق العميل كله) وrule_branch_manager_own_branches_only
+  (فرعه فقط) — أي يرى العميل كله بدل فرعه فقط، رغم أن أحد أدواره مقيَّد
+  صراحة بفرع واحد. أُصلح بتوسيع القيد `_check_single_authority_per_user`
+  في membership.py ليمنع أيضًا تعدد الأدوار **داخل** نفس الهيئة (لا الهيئات
+  الثلاث الكبرى فقط) — نفس الدور مكررًا عبر عملاء مختلفين (محاسب يخدم
+  عميلين) يبقى مسموحًا صراحة لأنه لا يسبب هذا الاتساع. المنطق مُختبَر فعليًا
+  بمعزل عن Odoo في lib/authority_context.py (10/10 PASS، منها
+  test_owner_and_branch_manager_together_is_rejected_prevents_or_widening
+  التي تثبت هذا السيناريو بالذات). القيد نفسه NOT RUN على Odoo حقيقي بعد.
+-->
+<odoo>
+    <record id="rule_organization_merchant_own_only" model="ir.rule">
+        <field name="name">Organization: التاجر يرى عميله فقط</field>
+        <field name="model_id" ref="model_octa_hub_organization"/>
+        <field name="domain_force">[('id', 'in', user.env['octa.hub.membership'].sudo().search([
+            ('user_id', '=', user.id), ('party_type', '=', 'merchant'), ('active', '=', True)
+        ]).mapped('organization_id').ids)]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_owner')), (4, ref('group_merchant_accountant')),
+                                     (4, ref('group_merchant_branch_manager')), (4, ref('group_merchant_internal_tech'))]"/>
+    </record>
+
+    <record id="rule_branch_merchant_scope" model="ir.rule">
+        <field name="name">Branch: ضمن نطاق عميل العضوية، ومقيّد بالفروع المسموحة لمسؤول الفرع</field>
+        <field name="model_id" ref="model_octa_hub_branch"/>
+        <field name="domain_force">[
+            ('organization_id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'), ('active', '=', True)
+            ]).mapped('organization_id').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_owner')), (4, ref('group_merchant_accountant'))]"/>
+    </record>
+
+    <record id="rule_branch_manager_own_branches_only" model="ir.rule">
+        <field name="name">Branch: مسؤول الفرع لا يرى فرعًا آخر</field>
+        <field name="model_id" ref="model_octa_hub_branch"/>
+        <field name="domain_force">[
+            ('id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'),
+                ('role_code', '=', 'merchant_branch_manager'), ('active', '=', True)
+            ]).mapped('branch_ids').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_branch_manager'))]"/>
+    </record>
+
+    <record id="rule_order_merchant_scope" model="ir.rule">
+        <field name="name">Order: ضمن نطاق عميل العضوية</field>
+        <field name="model_id" ref="model_octa_hub_order"/>
+        <field name="domain_force">[
+            ('organization_id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'), ('active', '=', True)
+            ]).mapped('organization_id').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_owner')), (4, ref('group_merchant_accountant'))]"/>
+    </record>
+
+    <record id="rule_order_branch_manager_own_branches" model="ir.rule">
+        <field name="name">Order: مسؤول الفرع يرى طلبات فرعه فقط</field>
+        <field name="model_id" ref="model_octa_hub_order"/>
+        <field name="domain_force">[
+            ('branch_id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'),
+                ('role_code', '=', 'merchant_branch_manager'), ('active', '=', True)
+            ]).mapped('branch_ids').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_branch_manager'))]"/>
+    </record>
+
+    <record id="rule_organization_octatech_full_scope_within_reason" model="ir.rule">
+        <field name="name">Organization: مدير هوية أوكتاتيك يرى الكل، لكن ليس sudo عام</field>
+        <field name="model_id" ref="model_octa_hub_organization"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_octatech_identity_admin'))]"/>
+    </record>
+
+    <record id="rule_partner_grant_partner_scope" model="ir.rule">
+        <field name="name">PartnerGrant: الشريك يرى فقط تفويضاته الفعالة</field>
+        <field name="model_id" ref="model_octa_hub_partner_grant"/>
+        <field name="domain_force">[
+            ('partner_membership_id.user_id', '=', user.id),
+            ('revoked_at', '=', False),
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_partner_tech'))]"/>
+    </record>
+
+    <!-- إصلاح بعد مراجعة مستقلة خارجية (R04): هذه السبعة موديلات كانت
+         تملك ACL قراءة/كتابة للتاجر أو الشريك بلا أي record rule مقابل —
+         مستخدم تاجر A كان يقدر (نظريًا، عبر ORM/RPC مباشرة، لا الواجهة فقط)
+         يقرأ سجلات عميل B لهذه الموديلات كاملة. أُضيفت قواعد عزل لكل واحد،
+         بنفس نمط القواعد أعلاه (استعلام فرعي عبر عضوية المستخدم). NOT
+         VERIFIED — لا Odoo حقيقي لتشغيل اختبار وصول سلبي فعلي؛ راجع
+         tests/test_isolation.py للاختبار المكتوب (NOT RUN). -->
+
+    <record id="rule_connection_merchant_scope" model="ir.rule">
+        <field name="name">Connection: ضمن نطاق عميل العضوية فقط (R04)</field>
+        <field name="model_id" ref="model_octa_hub_connection"/>
+        <field name="domain_force">[
+            ('organization_id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'), ('active', '=', True)
+            ]).mapped('organization_id').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_owner')), (4, ref('group_merchant_internal_tech'))]"/>
+    </record>
+    <record id="rule_connection_partner_scope" model="ir.rule">
+        <field name="name">Connection: الشريك يرى فقط اتصالات عملائه المفوَّضين له، ضمن الفروع والمدة المحددتين (R04)</field>
+        <field name="model_id" ref="model_octa_hub_connection"/>
+        <!-- إصلاح بعد مراجعة V2 المستقلة: النسخة السابقة كانت تتجاهل
+             expires_at وbranch_ids تمامًا (فقط revoked_at) — تفويض منتهٍ
+             (لم يُسحب صراحة لكن انتهت مدته) أو محدد بفرع واحد كان يمنح رؤية
+             كل اتصالات العميل بالكامل. لا يمكن كتابة 'expires_at > now()'
+             مباشرة في domain_force (Odoo 19 لا يوفر datetime في سياق
+             التقييم — مُتحقَّق من ir_rule.py::_eval_context)؛ لذلك استُخدم
+             حقل is_currently_valid المخزَّن والمُحدَّث صراحة بدلًا من ذلك
+             (انظر models/partner_grant.py). الشرط الأول (OR الأول): فرع
+             محدد صراحة ضمن تفويض ساري وفروع غير فارغة. الشرط الثاني: تفويض
+             ساري بلا تحديد فروع (يعني كل فروع ذلك العميل). -->
+        <field name="domain_force">['|',
+            ('branch_id', 'in', user.env['octa.hub.partner.grant'].sudo().search([
+                ('partner_membership_id.user_id', '=', user.id),
+                ('revoked_at', '=', False), ('is_currently_valid', '=', True),
+                ('branch_ids', '!=', False),
+            ]).mapped('branch_ids').ids),
+            ('organization_id', 'in', user.env['octa.hub.partner.grant'].sudo().search([
+                ('partner_membership_id.user_id', '=', user.id),
+                ('revoked_at', '=', False), ('is_currently_valid', '=', True),
+                ('branch_ids', '=', False),
+            ]).mapped('organization_id').ids),
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_partner_tech'))]"/>
+    </record>
+
+    <!-- إصلاح بعد مراجعة V2 المستقلة: ACL كانت تمنح التاجر قراءة/كتابة/
+         إنشاء على octa.hub.partner.grant بلا أي قاعدة عزل مقابلة — تاجر A
+         كان يقدر (نظريًا عبر ORM/RPC) يقرأ تفويضات شركاء عميل B. -->
+    <record id="rule_partner_grant_merchant_own_org_only" model="ir.rule">
+        <field name="name">PartnerGrant: التاجر يرى ويدير فقط تفويضات عميله (R04)</field>
+        <field name="model_id" ref="model_octa_hub_partner_grant"/>
+        <field name="domain_force">[
+            ('organization_id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'), ('active', '=', True)
+            ]).mapped('organization_id').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_owner'))]"/>
+    </record>
+
+    <record id="rule_brand_merchant_scope" model="ir.rule">
+        <field name="name">Brand: ضمن نطاق عميل العضوية فقط (R04)</field>
+        <field name="model_id" ref="model_octa_hub_brand"/>
+        <field name="domain_force">[
+            ('organization_id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'), ('active', '=', True)
+            ]).mapped('organization_id').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_owner'))]"/>
+    </record>
+
+    <!-- إصلاح بعد مراجعة بوابة هنقرستيشن (القسم 1): storefront نموذج جديد،
+         لم يكن موجودًا في الجولات السابقة، فلا "نسيان" هنا بل تغطية من
+         البداية (نفس درس F-ISO-02/R04). -->
+    <record id="rule_storefront_merchant_scope" model="ir.rule">
+        <field name="name">Storefront: ضمن نطاق عميل العضوية فقط</field>
+        <field name="model_id" ref="model_octa_hub_storefront"/>
+        <field name="domain_force">[
+            ('organization_id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'), ('active', '=', True)
+            ]).mapped('organization_id').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_owner'))]"/>
+    </record>
+
+    <!-- إصلاح بعد مراجعة بوابة هنقرستيشن (القسم 2): نماذج جديدة، تغطية
+         عزل من البداية (نفس درس F-ISO-02/R04 من جولات سابقة). -->
+    <record id="rule_catalog_item_merchant_scope" model="ir.rule">
+        <field name="name">CatalogItem: ضمن نطاق عميل العضوية فقط</field>
+        <field name="model_id" ref="model_octa_hub_catalog_item"/>
+        <field name="domain_force">[
+            ('organization_id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'), ('active', '=', True)
+            ]).mapped('organization_id').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_owner'))]"/>
+    </record>
+
+    <record id="rule_modifier_group_merchant_scope" model="ir.rule">
+        <field name="name">ModifierGroup: ضمن نطاق عميل العضوية فقط</field>
+        <field name="model_id" ref="model_octa_hub_modifier_group"/>
+        <field name="domain_force">[
+            ('organization_id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'), ('active', '=', True)
+            ]).mapped('organization_id').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_owner'))]"/>
+    </record>
+
+    <record id="rule_modifier_merchant_scope" model="ir.rule">
+        <field name="name">Modifier: ضمن نطاق عميل العضوية عبر المجموعة الأم</field>
+        <field name="model_id" ref="model_octa_hub_modifier"/>
+        <field name="domain_force">[
+            ('group_id.organization_id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'), ('active', '=', True)
+            ]).mapped('organization_id').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_owner'))]"/>
+    </record>
+
+    <record id="rule_price_override_merchant_scope" model="ir.rule">
+        <field name="name">PriceOverride: ضمن نطاق عميل العضوية عبر الصنف الأب</field>
+        <field name="model_id" ref="model_octa_hub_price_override"/>
+        <field name="domain_force">[
+            ('item_id.organization_id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'), ('active', '=', True)
+            ]).mapped('organization_id').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_owner'))]"/>
+    </record>
+
+    <record id="rule_membership_merchant_own_org_only" model="ir.rule">
+        <field name="name">Membership: التاجر يرى أعضاء عميله فقط، لا عملاء آخرين (R04)</field>
+        <field name="model_id" ref="model_octa_hub_membership"/>
+        <field name="domain_force">[
+            ('organization_id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'), ('active', '=', True)
+            ]).mapped('organization_id').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_owner'))]"/>
+    </record>
+
+    <record id="rule_activation_checklist_merchant_scope" model="ir.rule">
+        <field name="name">ActivationChecklist: ضمن نطاق عميل العضوية عبر الفرع (R04)</field>
+        <field name="model_id" ref="model_octa_hub_activation_checklist"/>
+        <field name="domain_force">[
+            ('branch_id.organization_id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'), ('active', '=', True)
+            ]).mapped('organization_id').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_owner'))]"/>
+    </record>
+
+    <record id="rule_activation_step_merchant_scope" model="ir.rule">
+        <field name="name">ActivationStep: ضمن نطاق عميل العضوية عبر السجل الأب (R04)</field>
+        <field name="model_id" ref="model_octa_hub_activation_step"/>
+        <field name="domain_force">[
+            ('checklist_id.branch_id.organization_id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'), ('active', '=', True)
+            ]).mapped('organization_id').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_owner'))]"/>
+    </record>
+
+    <record id="rule_order_event_merchant_scope" model="ir.rule">
+        <field name="name">OrderEvent: ضمن نطاق عميل العضوية عبر الطلب الأب (R04)</field>
+        <field name="model_id" ref="model_octa_hub_order_event"/>
+        <field name="domain_force">[
+            ('order_id.organization_id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'), ('active', '=', True)
+            ]).mapped('organization_id').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_owner'))]"/>
+    </record>
+
+    <record id="rule_delivery_attempt_merchant_scope" model="ir.rule">
+        <field name="name">DeliveryAttempt: ضمن نطاق عميل العضوية عبر الطلب الأب (R04)</field>
+        <field name="model_id" ref="model_octa_hub_delivery_attempt"/>
+        <field name="domain_force">[
+            ('order_id.organization_id', 'in', user.env['octa.hub.membership'].sudo().search([
+                ('user_id', '=', user.id), ('party_type', '=', 'merchant'), ('active', '=', True)
+            ]).mapped('organization_id').ids)
+        ]</field>
+        <field name="groups" eval="[(4, ref('group_merchant_owner'))]"/>
+    </record>
+</odoo>

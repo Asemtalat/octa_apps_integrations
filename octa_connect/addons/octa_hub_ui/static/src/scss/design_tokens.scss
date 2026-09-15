@@ -1,0 +1,214 @@
+// design tokens + مكوّنات فعلية.
+//
+// تصحيح حرج بعد مراجعة سادسة: كل الجولات الخمس السابقة استخرجت نص وجداول
+// الـdocx فقط عبر python-docx، ولم تُفتح صور الشاشات الـ11 المُضمَّنة فعليًا
+// في الملف حتى الآن. بعد فتحها وعرضها فعليًا في هذه الجولة تبيّن أن الألوان
+// الحقيقية في صور التصميم المرجعية مختلفة عمّا استخدمناه: الأساسي في أغلب
+// الشاشات (05-08 نظرة عامة/الطلبات، 29-32 لوحة التشغيل، 01-04 الدخول) هو
+// أزرق-أخضر (teal) على خلفية كحلية داكنة تقريبًا، وليس الأزرق #2457C5 الذي
+// استخدمناه. القيم أدناه **تقدير بصري من معاينة الصور، وليست قراءة دقيقة
+// بأداة انتقاء لون** (لا تتوفر أداة كهذه في هذه البيئة) — يجب تأكيدها مع
+// فريق التصميم قبل اعتمادها نهائيًا. راجع docs/design-system.md قسم
+// "تعارض الألوان" للتفاصيل الكاملة ولقطات الشاشة المرجعية بالاسم.
+//
+// كذلك تبيّن أن نفس المستند يحتوي **نسختين مختلفتين** لبعض الشاشات (مثال:
+// نظرة عامة بأربع بطاقات في تصور، وبخمس بطاقات مختلفة القيم في تصور آخر) —
+// هذا تعارض داخل المرجع نفسه، موثّق كتعارض صريح في docs/decisions.md، وتم
+// اختيار المجموعة الأقرب لما بُني فعليًا مع تسجيل البديل.
+
+:root {
+  // ==== المجموعة الفاتحة (تُستخدم فعليًا في dashboard.js/order_list.js
+  // الحاليين؛ تُطابق شاشات الإعدادات/الفريق/الموبايل في المرجع) ====
+  --octa-color-background: #F6F8FB;
+  --octa-color-surface: #FFFFFF;
+  --octa-color-text: #172B4D;
+  --octa-color-text-muted: #5A6B8C;
+  --octa-color-primary: #0C7F71;        /* تصحيح: كان #2457C5ثم #0F9D8C — عُدِّل لأن #0F9D8C يعطي 3.38 تباين فقط (فشل AA للنص العادي)؛ هذا يعطي 4.90 (PASS) */
+  --octa-color-primary-hover: #0A6E62;
+  --octa-color-success: #167548;
+  --octa-color-success-bg: #E6F4EC;
+  --octa-color-warning: #8A5700;
+  --octa-color-warning-bg: #FBF1DF;
+  --octa-color-danger: #B42318;
+  --octa-color-danger-bg: #FBE9E7;
+  --octa-color-border: #D8E0EA;
+
+  // ==== المجموعة الداكنة (جديدة — تُطابق شاشات 05-08 و29-32 و01-04 في
+  // الصور المرجعية؛ غير مُطبَّقة بعد على أي مكوّن OWL حالي، مُضافة كأساس
+  // فقط. القيم تقريبية بصريًا، NOT VERIFIED بأداة دقيقة) ====
+  --octa-dark-bg: #0B1E33;
+  --octa-dark-surface: #11253D;
+  --octa-dark-sidebar: #0A1B30;
+  --octa-dark-text: #E7ECF3;
+  --octa-dark-text-muted: #8CA0BC;
+  --octa-dark-border: #1E3350;
+  --octa-dark-accent: #14B8A6;
+
+  // مسافات (القسم 13: مقياس 4/8/12/16/24/32)
+  --octa-space-1: 4px;
+  --octa-space-2: 8px;
+  --octa-space-3: 12px;
+  --octa-space-4: 16px;
+  --octa-space-6: 24px;
+  --octa-space-8: 32px;
+
+  // خطوط
+  --octa-font-family-ar: "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --octa-font-family-en: "Inter", "Segoe UI", Arial, sans-serif;
+  --octa-font-size-body: 14px;
+  --octa-font-size-body-lg: 16px;
+  --octa-font-size-heading: 24px;
+  --octa-font-size-heading-lg: 28px;
+
+  // أبعاد وحواف
+  --octa-control-height: 40px;
+  --octa-control-height-lg: 44px;
+  --octa-sidebar-width: 240px;
+  --octa-radius-sm: 6px;
+  --octa-radius-md: 10px;
+  --octa-shadow-card: 0 1px 2px rgba(23, 43, 77, 0.06), 0 1px 8px rgba(23, 43, 77, 0.04);
+  --octa-focus-ring: 0 0 0 3px rgba(36, 87, 197, 0.35);
+}
+
+$octa-bp-mobile: 480px;
+$octa-bp-tablet: 900px;
+$octa-bp-desktop: 1280px;
+
+body.o_octa_app {
+  background: var(--octa-color-background);
+  color: var(--octa-color-text);
+  font-family: var(--octa-font-family-ar);
+  font-size: var(--octa-font-size-body);
+}
+body.o_octa_app[dir="ltr"] { font-family: var(--octa-font-family-en); }
+
+.o_octa_env_banner {
+  background: var(--octa-color-warning);
+  color: #fff;
+  padding: var(--octa-space-2) var(--octa-space-4);
+  font-size: var(--octa-font-size-body);
+  text-align: center;
+  font-weight: 600;
+}
+
+.o_octa_ltr_isolate {
+  direction: ltr;
+  unicode-bidi: isolate;
+  display: inline-block;
+}
+
+.o_octa_shell { display: flex; min-height: 100vh; }
+.o_octa_sidebar {
+  width: var(--octa-sidebar-width);
+  background: var(--octa-color-surface);
+  border-inline-end: 1px solid var(--octa-color-border);
+  flex-shrink: 0;
+  transition: width 0.15s ease;
+}
+.o_octa_sidebar.o_collapsed { width: 64px; }
+.o_octa_main { flex: 1; padding: var(--octa-space-6); min-width: 0; }
+
+.o_octa_metric_card {
+  background: var(--octa-color-surface);
+  border: 1px solid var(--octa-color-border);
+  border-radius: var(--octa-radius-md);
+  box-shadow: var(--octa-shadow-card);
+  padding: var(--octa-space-4);
+  min-width: 180px;
+}
+.o_octa_metric_card .o_octa_metric_label {
+  color: var(--octa-color-text-muted);
+  font-size: var(--octa-font-size-body);
+  margin-bottom: var(--octa-space-2);
+}
+.o_octa_metric_card .o_octa_metric_value {
+  font-size: var(--octa-font-size-heading-lg);
+  font-weight: 700;
+  line-height: 1.2;
+}
+.o_octa_metric_card .o_octa_metric_period {
+  color: var(--octa-color-text-muted);
+  font-size: 12px;
+  margin-top: var(--octa-space-1);
+}
+.o_octa_metrics_row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--octa-space-4);
+  margin-bottom: var(--octa-space-2);
+}
+.o_octa_metric_detail_row {
+  font-size: 12px;
+  color: var(--octa-color-text-muted);
+  margin-bottom: var(--octa-space-6);
+  display: flex;
+  gap: var(--octa-space-2);
+  flex-wrap: wrap;
+}
+@media (max-width: $octa-bp-tablet) { .o_octa_metrics_row { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: $octa-bp-mobile) { .o_octa_metrics_row { grid-template-columns: 1fr; } }
+
+.o_octa_status_badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--octa-space-1);
+  padding: 2px var(--octa-space-2);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.o_octa_status_badge.o_status_success { background: var(--octa-color-success-bg); color: var(--octa-color-success); }
+.o_octa_status_badge.o_status_warning { background: var(--octa-color-warning-bg); color: var(--octa-color-warning); }
+.o_octa_status_badge.o_status_danger  { background: var(--octa-color-danger-bg);  color: var(--octa-color-danger); }
+.o_octa_status_badge.o_status_unknown { background: #EEF1F6; color: var(--octa-color-text-muted); }
+.o_octa_status_badge .o_octa_status_dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+.o_octa_sync_state { display: inline-flex; align-items: center; gap: var(--octa-space-1); font-size: 12px; }
+
+.o_octa_channel_logo { width: 20px; height: 20px; border-radius: 4px; object-fit: contain; transform: none !important; }
+
+.o_octa_table { width: 100%; border-collapse: collapse; background: var(--octa-color-surface);
+  border: 1px solid var(--octa-color-border); border-radius: var(--octa-radius-md); overflow: hidden; }
+.o_octa_table th {
+  text-align: start; padding: var(--octa-space-3) var(--octa-space-4);
+  background: var(--octa-color-background); font-weight: 600; font-size: 12px;
+  color: var(--octa-color-text-muted); border-bottom: 1px solid var(--octa-color-border);
+}
+.o_octa_table td { padding: var(--octa-space-3) var(--octa-space-4); border-bottom: 1px solid var(--octa-color-border); }
+.o_octa_table tr:last-child td { border-bottom: none; }
+.o_octa_table tr:hover td { background: var(--octa-color-background); cursor: pointer; }
+
+.o_octa_timeline { list-style: none; margin: 0; padding: 0; border-inline-start: 2px solid var(--octa-color-border); }
+.o_octa_timeline_item { position: relative; padding-inline-start: var(--octa-space-4); padding-bottom: var(--octa-space-4); }
+.o_octa_timeline_item::before {
+  content: ""; position: absolute; inset-inline-start: -7px; top: 2px;
+  width: 12px; height: 12px; border-radius: 50%; background: var(--octa-color-surface);
+  border: 2px solid var(--octa-color-primary);
+}
+.o_octa_timeline_item.o_unknown::before { border-color: var(--octa-color-text-muted); }
+.o_octa_timeline_time { font-size: 12px; color: var(--octa-color-text-muted); }
+
+.o_octa_state_block {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: var(--octa-space-8); text-align: center; color: var(--octa-color-text-muted);
+}
+.o_octa_state_block.o_error { color: var(--octa-color-danger); }
+
+.o_octa_confirm_diff_row { display: flex; justify-content: space-between; padding: var(--octa-space-2) 0;
+  border-bottom: 1px dashed var(--octa-color-border); font-size: var(--octa-font-size-body); }
+.o_octa_confirm_diff_old { color: var(--octa-color-text-muted); text-decoration: line-through; }
+.o_octa_confirm_diff_new { color: var(--octa-color-success); font-weight: 600; }
+
+.o_octa_secret_once {
+  font-family: monospace; background: var(--octa-color-background);
+  border: 1px dashed var(--octa-color-border); border-radius: var(--octa-radius-sm);
+  padding: var(--octa-space-2) var(--octa-space-3); direction: ltr; unicode-bidi: isolate;
+}
+.o_octa_secret_consumed { color: var(--octa-color-text-muted); font-style: italic; }
+
+:focus-visible { outline: none; box-shadow: var(--octa-focus-ring); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

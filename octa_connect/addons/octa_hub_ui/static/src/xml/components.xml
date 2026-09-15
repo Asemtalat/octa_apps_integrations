@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+  <t t-name="octa_hub_ui.StatusBadge">
+    <span t-attf-class="o_octa_status_badge o_status_{{props.kind}}">
+      <span class="o_octa_status_dot"/>
+      <span t-esc="props.label"/>
+    </span>
+  </t>
+
+  <t t-name="octa_hub_ui.MetricCard">
+    <div class="o_octa_metric_card">
+      <div class="o_octa_metric_label" t-esc="props.label"/>
+      <div class="o_octa_metric_value">
+        <t t-if="props.value === null">غير متاح</t>
+        <t t-else="" t-esc="props.value"/>
+      </div>
+      <div class="o_octa_metric_period" t-if="props.period" t-esc="props.period"/>
+    </div>
+  </t>
+
+  <t t-name="octa_hub_ui.EmptyState">
+    <div class="o_octa_state_block">
+      <p t-esc="props.message"/>
+      <button t-if="props.actionLabel" class="btn btn-primary" t-on-click="() => props.onAction()">
+        <t t-esc="props.actionLabel"/>
+      </button>
+    </div>
+  </t>
+
+  <t t-name="octa_hub_ui.ErrorState">
+    <div class="o_octa_state_block o_error">
+      <p t-esc="props.message"/>
+    </div>
+  </t>
+
+  <t t-name="octa_hub_ui.LoadingState">
+    <div class="o_octa_state_block">
+      <p>...جارٍ التحميل</p>
+    </div>
+  </t>
+
+  <t t-name="octa_hub_ui.Timeline">
+    <ul class="o_octa_timeline">
+      <li t-foreach="props.items" t-as="item" t-key="item.label + item.time"
+          t-attf-class="o_octa_timeline_item {{item.unknown ? 'o_unknown' : ''}}">
+        <div t-esc="item.label"/>
+        <div class="o_octa_timeline_time">
+          <t t-if="item.unknown">غير متاح</t>
+          <t t-else="" t-esc="item.time"/>
+        </div>
+      </li>
+    </ul>
+  </t>
+
+  <t t-name="octa_hub_ui.SecretRevealOnce">
+    <div>
+      <t t-if="props.secret">
+        <span class="o_octa_secret_once" t-esc="props.secret"/>
+      </t>
+      <t t-else="">
+        <span class="o_octa_secret_consumed">تم إخفاؤه بعد أول عرض — لا يمكن استرجاعه</span>
+      </t>
+    </div>
+  </t>
+
+</templates>

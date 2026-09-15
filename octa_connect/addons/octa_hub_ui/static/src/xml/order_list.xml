@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+  <t t-name="octa_hub_ui.OrderList">
+    <div class="o_octa_app o_octa_main" dir="rtl">
+      <h2>الطلبات</h2>
+
+      <OctaErrorState t-if="state.error" message="state.error"/>
+      <OctaLoadingState t-elif="state.loading"/>
+      <OctaEmptyState t-elif="!state.rows.length" message="'لا توجد طلبات مطابقة لهذه الفلاتر'"/>
+
+      <table class="o_octa_table" t-else="">
+        <thead>
+          <tr>
+            <th>رقم الطلب (خارجي)</th><th>الفرع</th><th>القناة</th>
+            <th>الإجمالي</th><th>حالة النقل</th><th>حالة الطلب</th><th>آخر تحديث</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr t-foreach="state.rows" t-as="row" t-key="row.id" t-on-click="() => this.openDetail(row.id)">
+            <td class="o_octa_ltr_isolate" t-esc="row.external_order_id"/>
+            <td t-esc="row.branch_id[1]"/>
+            <td t-esc="row.connection_id[1]"/>
+            <td class="o_octa_ltr_isolate" t-esc="row.total_minor_units / 100"/>
+            <td><OctaStatusBadge kind="transportBadge(row.transport_state)[0]" label="transportBadge(row.transport_state)[1]"/></td>
+            <td><OctaStatusBadge kind="commercialBadge(row.commercial_state)[0]" label="commercialBadge(row.commercial_state)[1]"/></td>
+            <td class="o_octa_ltr_isolate" t-esc="row.write_date"/>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </t>
+</templates>

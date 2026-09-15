@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  إصلاح حرج بعد مراجعة مستقلة خارجية (R15)، مُتحقَّق من نمط Odoo 19 الحقيقي
+  (odoo/addons/base/views/base_menus.xml — بنية ir.actions.client/menuitem
+  الفعلية، تم تنزيلها والتحقق منها مباشرة): كانت مكوّنات OWL الثلاثة
+  (dashboard/order_list/order_detail) تُسجَّل في سجل JS فقط
+  (`registry.category("actions").add(...)`) بلا أي `ir.actions.client` أو
+  `menuitem` XML يربطها بمسار تنقل فعلي — لا شيء كان سيجعلها قابلة للوصول
+  حتى نظريًا من داخل واجهة Odoo. هذا أول ربط فعلي.
+
+  NOT RUN — لا Odoo حقيقي لتحميل هذا XML أو فتح القائمة فعليًا. الصيغة
+  مطابقة لما وُجد في مصدر Odoo 19 الحقيقي، وليست تخمينًا.
+-->
+<odoo>
+    <record id="action_octa_hub_dashboard" model="ir.actions.client">
+        <field name="name">Octa Connect - نظرة عامة</field>
+        <field name="tag">octa_hub_dashboard</field>
+    </record>
+
+    <record id="action_octa_hub_order_list" model="ir.actions.client">
+        <field name="name">Octa Connect - الطلبات</field>
+        <field name="tag">octa_hub_order_list</field>
+    </record>
+
+    <!-- octa_hub_order_detail لا تحتاج عنصر قائمة خاصًا بها — تُفتح برمجيًا
+         من order_list.js عبر doAction بمعرف الطلب، لا بالتنقل المباشر. -->
+
+    <!-- إصلاح حرج مكتشف بتشغيل فعلي حقيقي لأول مرة على Odoo 19 حقيقي:
+         كانت قيمة groups= ممتدة على سطرين بمسافة بادئة في المنتصف — Odoo
+         لا يُجري strip() على كل عنصر مفصول بفاصلة، فوصلت المسافات البادئة
+         حرفيًا كجزء من الـxmlid المطلوب فشل البحث عنه فعليًا
+         ("External ID not found... [مسافات كثيرة]group_merchant_branch_manager").
+         أُصلح بوضع القيمة على سطر واحد متصل بلا التفاف. -->
+    <menuitem id="menu_octa_connect_root"
+              name="Octa Connect"
+              sequence="60"
+              groups="octa_hub_core.group_merchant_owner,octa_hub_core.group_merchant_accountant,octa_hub_core.group_merchant_branch_manager,octa_hub_core.group_merchant_internal_tech"/>
+
+    <menuitem id="menu_octa_connect_dashboard"
+              name="نظرة عامة"
+              parent="menu_octa_connect_root"
+              action="action_octa_hub_dashboard"
+              sequence="10"/>
+
+    <menuitem id="menu_octa_connect_orders"
+              name="الطلبات"
+              parent="menu_octa_connect_root"
+              action="action_octa_hub_order_list"
+              sequence="20"/>
+</odoo>

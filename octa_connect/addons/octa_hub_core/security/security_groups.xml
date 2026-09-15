@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  الهيئات ثلاث: التاجر، الشريك التقني، أوكتاتيك (القسم 6) — مجموعات منفصلة
+  فعليًا، وليست قوائم مختلفة لنفس الصلاحيات. NOT RUN (لا Odoo متاح).
+
+  إصلاح حرج بعد مراجعة مستقلة خارجية (R02)، مُتحقَّق منه بمصدر Odoo 19
+  الحقيقي (تنزيل فعلي لفرع 19.0، فحص odoo/addons/base/models/res_groups.py
+  وres_groups_privilege.py وbase_groups.xml الحقيقية): نموذج `res.groups`
+  في Odoo 19 **لم يعد يملك حقل `category_id` إطلاقًا** — استُبدل بحقل
+  `privilege_id` (Many2one إلى نموذج جديد `res.groups.privilege`)، والذي
+  يحمل هو `category_id` (Many2one إلى `ir.module.category`). النسخة
+  السابقة من هذا الملف كانت تكتب `<field name="category_id".../>` مباشرة
+  على سجلات `res.groups` — حقل غير موجود إطلاقًا، كان سيفشل تحميل XML عند
+  التثبيت الفعلي (مانع تثبيت حقيقي 100%). أُصلح بإنشاء `res.groups.privilege`
+  واحد لكل مجموعة (نفس التمايز السابق تمامًا)، وربط كل `res.groups` بامتيازه
+  عبر `privilege_id` بدل `category_id` مباشرة — يطابق تمامًا نمط
+  `odoo/addons/base/security/base_groups.xml` الحقيقي.
+-->
+<odoo>
+    <record id="module_category_octa_connect" model="ir.module.category">
+        <field name="name">Octa Connect</field>
+    </record>
+
+    <!-- امتيازات (privileges) — واحد لكل مجموعة، بنفس التمايز السابق -->
+    <record id="privilege_merchant_owner" model="res.groups.privilege">
+        <field name="name">Octa Connect / تاجر - مالك</field>
+        <field name="category_id" ref="module_category_octa_connect"/>
+    </record>
+    <record id="privilege_merchant_accountant" model="res.groups.privilege">
+        <field name="name">Octa Connect / تاجر - محاسب</field>
+        <field name="category_id" ref="module_category_octa_connect"/>
+    </record>
+    <record id="privilege_merchant_branch_manager" model="res.groups.privilege">
+        <field name="name">Octa Connect / تاجر - مسؤول فرع</field>
+        <field name="category_id" ref="module_category_octa_connect"/>
+    </record>
+    <record id="privilege_merchant_internal_tech" model="res.groups.privilege">
+        <field name="name">Octa Connect / تاجر - تقني داخلي</field>
+        <field name="category_id" ref="module_category_octa_connect"/>
+    </record>
+    <record id="privilege_partner_tech" model="res.groups.privilege">
+        <field name="name">Octa Connect / شريك تقني</field>
+        <field name="category_id" ref="module_category_octa_connect"/>
+    </record>
+    <record id="privilege_octatech_identity_admin" model="res.groups.privilege">
+        <field name="name">Octa Connect / أوكتاتيك - مدير الهوية</field>
+        <field name="category_id" ref="module_category_octa_connect"/>
+    </record>
+    <record id="privilege_octatech_support" model="res.groups.privilege">
+        <field name="name">Octa Connect / أوكتاتيك - الدعم</field>
+        <field name="category_id" ref="module_category_octa_connect"/>
+    </record>
+    <record id="privilege_octatech_integration" model="res.groups.privilege">
+        <field name="name">Octa Connect / أوكتاتيك - التكامل</field>
+        <field name="category_id" ref="module_category_octa_connect"/>
+    </record>
+    <record id="privilege_octatech_finance" model="res.groups.privilege">
+        <field name="name">Octa Connect / أوكتاتيك - المالية</field>
+        <field name="category_id" ref="module_category_octa_connect"/>
+    </record>
+    <record id="privilege_octatech_security" model="res.groups.privilege">
+        <field name="name">Octa Connect / أوكتاتيك - الأمن</field>
+        <field name="category_id" ref="module_category_octa_connect"/>
+    </record>
+
+    <!-- فئة التاجر -->
+    <record id="group_merchant_owner" model="res.groups">
+        <field name="name">Octa Connect / تاجر - مالك</field>
+        <field name="privilege_id" ref="privilege_merchant_owner"/>
+    </record>
+    <record id="group_merchant_accountant" model="res.groups">
+        <field name="name">Octa Connect / تاجر - محاسب</field>
+        <field name="privilege_id" ref="privilege_merchant_accountant"/>
+    </record>
+    <record id="group_merchant_branch_manager" model="res.groups">
+        <field name="name">Octa Connect / تاجر - مسؤول فرع</field>
+        <field name="privilege_id" ref="privilege_merchant_branch_manager"/>
+    </record>
+    <record id="group_merchant_internal_tech" model="res.groups">
+        <field name="name">Octa Connect / تاجر - تقني داخلي</field>
+        <field name="privilege_id" ref="privilege_merchant_internal_tech"/>
+    </record>
+
+    <!-- فئة الشريك التقني -->
+    <record id="group_partner_tech" model="res.groups">
+        <field name="name">Octa Connect / شريك تقني</field>
+        <field name="privilege_id" ref="privilege_partner_tech"/>
+    </record>
+
+    <!-- فئة أوكتاتيك — أدوار منفصلة عمدًا، لا مجموعة "مشرف" واحدة -->
+    <record id="group_octatech_identity_admin" model="res.groups">
+        <field name="name">Octa Connect / أوكتاتيك - مدير الهوية</field>
+        <field name="privilege_id" ref="privilege_octatech_identity_admin"/>
+    </record>
+    <record id="group_octatech_support" model="res.groups">
+        <field name="name">Octa Connect / أوكتاتيك - الدعم</field>
+        <field name="privilege_id" ref="privilege_octatech_support"/>
+    </record>
+    <record id="group_octatech_integration" model="res.groups">
+        <field name="name">Octa Connect / أوكتاتيك - التكامل</field>
+        <field name="privilege_id" ref="privilege_octatech_integration"/>
+    </record>
+    <record id="group_octatech_finance" model="res.groups">
+        <field name="name">Octa Connect / أوكتاتيك - المالية</field>
+        <field name="privilege_id" ref="privilege_octatech_finance"/>
+    </record>
+    <record id="group_octatech_security" model="res.groups">
+        <field name="name">Octa Connect / أوكتاتيك - الأمن</field>
+        <field name="privilege_id" ref="privilege_octatech_security"/>
+    </record>
+</odoo>

@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  بيانات اختبار معلنة (noupdate=1 حتى لا تُعاد كتابتها عند upgrade) — القسم 4:
+  "دعوتين تجريبيتين على الأقل لعميلين، فرعين على الأقل لأحدهما". لا بيانات
+  عملاء حقيقية هنا إطلاقًا (القسم 15). NOT RUN.
+-->
+<odoo noupdate="1">
+    <record id="demo_org_a" model="octa.hub.organization">
+        <field name="name">[TEST] مطعم الاختبار أ</field>
+        <field name="state">activation_in_progress</field>
+    </record>
+    <record id="demo_org_b" model="octa.hub.organization">
+        <field name="name">[TEST] مطعم الاختبار ب</field>
+        <field name="state">draft</field>
+    </record>
+
+    <record id="demo_branch_a_main" model="octa.hub.branch">
+        <field name="name">[TEST] فرع أ - الرئيسي</field>
+        <field name="organization_id" ref="demo_org_a"/>
+        <field name="external_pos_system">mock_pos</field>
+        <field name="external_branch_id">BR-A-MAIN</field>
+    </record>
+    <record id="demo_branch_a_second" model="octa.hub.branch">
+        <field name="name">[TEST] فرع أ - الثاني</field>
+        <field name="organization_id" ref="demo_org_a"/>
+        <field name="external_pos_system">mock_pos</field>
+        <field name="external_branch_id">BR-A-SECOND</field>
+    </record>
+    <record id="demo_branch_b_main" model="octa.hub.branch">
+        <field name="name">[TEST] فرع ب - الرئيسي</field>
+        <field name="organization_id" ref="demo_org_b"/>
+        <field name="external_pos_system">mock_pos</field>
+        <field name="external_branch_id">BR-B-MAIN</field>
+    </record>
+
+    <!-- إصلاح R12: تعريف موصل مخزَّن فعليًا يطابق حرفيًا قدرات
+         octa_hub_connector_demo/simulator.py::DEMO_CONNECTOR_DEFINITION
+         المُختبَرة (lib/connector_capabilities.py، 6/6 PASS) — بدل افتراض
+         مؤقت داخل الكود، هذه بيانات مخزَّنة فعليًا يقرأها الـcontroller.
+         يجب تعريفها قبل octa.hub.connection التي تشير إليها (ترتيب XML). -->
+    <record id="demo_connector_definition_demo" model="octa.hub.connector.definition">
+        <field name="connector_code">demo</field>
+        <field name="contract_version">octa-connect-order-v1</field>
+    </record>
+    <record id="demo_cap_demo_orders" model="octa.hub.connector.capability.line">
+        <field name="definition_id" ref="demo_connector_definition_demo"/>
+        <field name="capability">orders</field>
+        <field name="status">supported</field>
+    </record>
+    <record id="demo_cap_demo_cancel" model="octa.hub.connector.capability.line">
+        <field name="definition_id" ref="demo_connector_definition_demo"/>
+        <field name="capability">cancel</field>
+        <field name="status">supported</field>
+    </record>
+    <record id="demo_cap_demo_menu" model="octa.hub.connector.capability.line">
+        <field name="definition_id" ref="demo_connector_definition_demo"/>
+        <field name="capability">menu</field>
+        <field name="status">supported</field>
+    </record>
+    <record id="demo_cap_demo_prices" model="octa.hub.connector.capability.line">
+        <field name="definition_id" ref="demo_connector_definition_demo"/>
+        <field name="capability">prices</field>
+        <field name="status">supported</field>
+    </record>
+    <record id="demo_cap_demo_availability" model="octa.hub.connector.capability.line">
+        <field name="definition_id" ref="demo_connector_definition_demo"/>
+        <field name="capability">availability</field>
+        <field name="status">not_verified</field>
+    </record>
+    <record id="demo_cap_demo_pause" model="octa.hub.connector.capability.line">
+        <field name="definition_id" ref="demo_connector_definition_demo"/>
+        <field name="capability">pause</field>
+        <field name="status">unsupported</field>
+    </record>
+    <record id="demo_cap_demo_reconciliation" model="octa.hub.connector.capability.line">
+        <field name="definition_id" ref="demo_connector_definition_demo"/>
+        <field name="capability">reconciliation</field>
+        <field name="status">unsupported</field>
+    </record>
+    <record id="demo_cap_demo_idempotency" model="octa.hub.connector.capability.line">
+        <field name="definition_id" ref="demo_connector_definition_demo"/>
+        <field name="capability">idempotency</field>
+        <field name="status">supported</field>
+    </record>
+    <record id="demo_cap_demo_status_updates" model="octa.hub.connector.capability.line">
+        <field name="definition_id" ref="demo_connector_definition_demo"/>
+        <field name="capability">status_updates</field>
+        <field name="status">supported</field>
+    </record>
+    <record id="demo_cap_demo_scheduling" model="octa.hub.connector.capability.line">
+        <field name="definition_id" ref="demo_connector_definition_demo"/>
+        <field name="capability">scheduling</field>
+        <field name="status">unsupported</field>
+    </record>
+    <record id="demo_cap_demo_query" model="octa.hub.connector.capability.line">
+        <field name="definition_id" ref="demo_connector_definition_demo"/>
+        <field name="capability">query</field>
+        <field name="status">supported</field>
+    </record>
+
+    <!-- إصلاح بعد مراجعة بوابة هنقرستيشن (القسم 1): storefront يفصل
+         "الفرع الفعلي" عن "البراند المعروض" — يسمح بأكثر من براند لنفس
+         الموقع (مطبخ سحابي). demo_branch_a_main يستضيف الآن **براندين**
+         مختلفين، كل واحد بمتجر تطبيق واتصال منفصلين، لإثبات القدرة فعليًا
+         لا وصفًا نظريًا فقط. -->
+    <record id="demo_brand_a_main" model="octa.hub.brand">
+        <field name="name">[TEST] براند الرئيسي</field>
+        <field name="organization_id" ref="demo_org_a"/>
+    </record>
+    <record id="demo_brand_a_virtual" model="octa.hub.brand">
+        <field name="name">[TEST] براند افتراضي ثانٍ (نفس المطبخ)</field>
+        <field name="organization_id" ref="demo_org_a"/>
+    </record>
+    <record id="demo_storefront_a_main" model="octa.hub.storefront">
+        <field name="name">[TEST] متجر الفرع أ - البراند الرئيسي</field>
+        <field name="branch_id" ref="demo_branch_a_main"/>
+        <field name="brand_id" ref="demo_brand_a_main"/>
+    </record>
+    <record id="demo_storefront_a_virtual" model="octa.hub.storefront">
+        <field name="name">[TEST] متجر الفرع أ - البراند الافتراضي (نفس المطبخ)</field>
+        <field name="branch_id" ref="demo_branch_a_main"/>
+        <field name="brand_id" ref="demo_brand_a_virtual"/>
+    </record>
+
+    <record id="demo_connection_a_main_demo" model="octa.hub.connection">
+        <field name="storefront_id" ref="demo_storefront_a_main"/>
+        <field name="connector_code">demo</field>
+        <field name="technically_connected">1</field>
+        <field name="connector_definition_id" ref="demo_connector_definition_demo"/>
+    </record>
+    <record id="demo_connection_a_virtual_demo" model="octa.hub.connection">
+        <!-- نفس تطبيق التوصيل (demo)، نفس الفرع الفعلي، لكن storefront
+             مختلف (براند مختلف) — هذا بالضبط ما كان القيد القديم
+             (unique(branch_id, connector_code)) يمنعه خطأً قبل الإصلاح. -->
+        <field name="storefront_id" ref="demo_storefront_a_virtual"/>
+        <field name="connector_code">demo</field>
+        <field name="technically_connected">1</field>
+        <field name="connector_definition_id" ref="demo_connector_definition_demo"/>
+    </record>
+
+    <!-- إصلاح بعد مراجعة بوابة هنقرستيشن (القسم 2): بيانات تثبت السيناريوهات
+         المطلوبة فعليًا لا وصفًا نظريًا فقط — مجموعة إضافات واحدة مرتبطة
+         بصنفين مختلفين (لا تكرار)، وسعر مختلف حسب القناة بلا كتابة فوق
+         السعر الأساسي. -->
+    <record id="demo_item_burger" model="octa.hub.catalog.item">
+        <field name="storefront_id" ref="demo_storefront_a_main"/>
+        <field name="name_ar">[TEST] برجر دجاج</field>
+        <field name="name_en">[TEST] Chicken Burger</field>
+        <field name="external_id">SKU-BURGER-001</field>
+        <field name="sku">BURGER-001</field>
+        <field name="base_price_minor_units">3000</field>
+        <field name="currency_id" ref="base.SAR"/>
+        <field name="nutrition_info">450 سعرة حرارية (بيانات مُدخَلة من التاجر)</field>
+    </record>
+    <record id="demo_item_fries" model="octa.hub.catalog.item">
+        <field name="storefront_id" ref="demo_storefront_a_main"/>
+        <field name="name_ar">[TEST] بطاطس مقلية</field>
+        <field name="name_en">[TEST] Fries</field>
+        <field name="external_id">SKU-FRIES-001</field>
+        <field name="sku">FRIES-001</field>
+        <field name="base_price_minor_units">1200</field>
+        <field name="currency_id" ref="base.SAR"/>
+    </record>
+
+    <!-- مجموعة إضافات واحدة "حجم البطاطس" — مرتبطة بصنفين معًا أدناه
+         (burger وfries) لإثبات إعادة الاستخدام الفعلية، لا وصفًا فقط. -->
+    <record id="demo_modifier_group_size" model="octa.hub.modifier.group">
+        <field name="name">[TEST] الحجم</field>
+        <field name="organization_id" ref="demo_org_a"/>
+        <field name="min_select">1</field>
+        <field name="max_select">1</field>
+        <field name="mandatory">1</field>
+        <field name="item_ids" eval="[(4, ref('demo_item_burger')), (4, ref('demo_item_fries'))]"/>
+    </record>
+    <record id="demo_modifier_size_regular" model="octa.hub.modifier">
+        <field name="group_id" ref="demo_modifier_group_size"/>
+        <field name="name_ar">عادي</field>
+        <field name="price_minor_units">0</field>
+    </record>
+    <record id="demo_modifier_size_large" model="octa.hub.modifier">
+        <field name="group_id" ref="demo_modifier_group_size"/>
+        <field name="name_ar">كبير</field>
+        <field name="price_minor_units">500</field>
+    </record>
+
+    <!-- سعر مختلف للبرجر حسب قناة demo — بلا كتابة فوق base_price_minor_units -->
+    <record id="demo_price_override_burger_demo_channel" model="octa.hub.price.override">
+        <field name="item_id" ref="demo_item_burger"/>
+        <field name="channel_code">demo</field>
+        <field name="amount_minor_units">3500</field>
+        <field name="currency_id" ref="base.SAR"/>
+    </record>
+</odoo>

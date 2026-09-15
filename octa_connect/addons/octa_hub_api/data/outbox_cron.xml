@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  دورة عامل الطابور الدورية (R13) — مُتحقَّقة صياغتها من مصدر Odoo 19
+  الحقيقي (odoo/addons/base/data/ir_cron_data.xml). NOT RUN — لا Odoo
+  لتشغيل هذا cron فعليًا.
+
+  تحديث: محوِّل حقيقي مُختبَر الآن فعليًا موجود
+  (`addons/octa_hub_api/lib/mock_pos_adapter.py`، 6/6 PASS بما فيها دليل
+  تكامل كامل من طرف إلى طرف ضد خادم mock_pos حقيقي فعليًا — انظر
+  `test_mock_pos_adapter.py::test_full_outbox_cycle_with_real_adapter_end_to_end`).
+  الـcron **لا يزال معطَّلًا عمدًا (`active`=False)** — ليس لغياب محوِّل
+  بعد الآن، بل لأن mock_pos_service.py خادم اختبار يجب تشغيله يدويًا
+  كعملية منفصلة (tools/mock_pos/mock_pos_service.py)، وليس خدمة يديرها
+  Odoo نفسه أو موجودة افتراضيًا في أي بيئة إنتاج حقيقية. تفعيل هذا الـcron
+  تلقائيًا في بيئة بلا خادم mock_pos يعمل فعليًا سيفشل بانقطاع اتصال دائم
+  — نفس درجة الصدق المطلوبة: لا نُفعِّل شيئًا سيفشل بصمت أو بلا سياق واضح.
+
+  **للتفعيل محليًا للتطوير/العرض فقط** (وليس إنتاجًا حقيقيًا): شغّل
+  `python3 tools/mock_pos/mock_pos_service.py` كعملية منفصلة أولًا، ثم
+  فعِّل هذا الـcron واضبط `code` ليطابق المثال أدناه (معلَّق عمدًا):
+
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'lib'))
+    from mock_pos_adapter import make_mock_pos_dispatch_fn, make_mock_pos_query_fn
+    base_url = "http://127.0.0.1:8765"  # عنوان mock_pos_service.py الفعلي
+    model.run_worker_batch(dispatch_fn=make_mock_pos_dispatch_fn(base_url))
+    model.run_query_batch(query_fn=make_mock_pos_query_fn(base_url))
+
+  لا يزال هذا **لا يمثّل اعتمادًا لموصل POS إنتاجي حقيقي** — mock_pos أداة
+  اختبار، لا نظام عميل فعلي. التكامل مع موصل إنتاجي حقيقي يبقى NOT_STARTED.
+-->
+<odoo>
+    <record id="cron_octa_hub_outbox_worker" model="ir.cron">
+        <field name="name">Octa Connect: معالجة طابور الإرسال (Outbox) — معطَّل، انظر التعليق أعلاه للتفعيل المحلي</field>
+        <field name="model_id" ref="model_octa_hub_outbox_item"/>
+        <field name="state">code</field>
+        <field name="code">
+# معطَّل عمدًا — انظر التعليق أعلى الملف لمثال تفعيل حقيقي محليًا ضد
+# mock_pos_service.py. لا تستدعِ run_worker_batch()/run_query_batch() بلا
+# dispatch_fn/query_fn حقيقيتين — ذلك يرفع TypeError فورًا بتصميم مقصود.
+pass
+        </field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">minutes</field>
+        <field name="priority">5</field>
+        <field name="active" eval="False"/>
+    </record>
+</odoo>
