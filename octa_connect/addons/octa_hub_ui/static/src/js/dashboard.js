@@ -57,6 +57,18 @@ export class OctaHubDashboard extends Component {
         // حالة "لا توجد طلبات في هذه الفترة" — تمييز صريح مطلوب.
         return this.state.metrics && this.state.metrics.all_time_order_count > 0;
     }
+
+    onRecheckForOrders() {
+        // إصلاح لعطل حقيقي مُبلَّغ من نشر فعلي (TypeError: onAction is not
+        // a function) — العلة الجذرية: dashboard.xml كان يمرر actionLabel
+        // بلا onAction إطلاقًا. الإصلاح البنيوي في components.xml يمنع
+        // الانهيار مستقبلًا مهما نُسي هذا الربط، لكن الزر هنا يحتاج سلوكًا
+        // حقيقيًا صادقًا أيضًا — لا "اختبار ربط" فعليًا (لا مسار لإرسال
+        // webhook تجريبي مبني بعد)، فقط إعادة فحص صادقة لوصول طلب جديد
+        // فعليًا. عُدِّل نص الزر في dashboard.xml ليطابق هذا السلوك بدقة،
+        // لا يَعِد بأكثر مما يفعل.
+        this._loadMetrics();
+    }
 }
 
 registry.category("actions").add("octa_hub_dashboard", OctaHubDashboard);

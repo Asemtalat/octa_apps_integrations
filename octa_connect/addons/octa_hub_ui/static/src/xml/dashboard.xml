@@ -14,7 +14,7 @@
 
       <t t-elif="!hasReceivedFirstOrderEver">
         <!-- Blueprint P70: حالة صريحة منفصلة، وليست صفرًا أخضر يوحي بالصحة -->
-        <OctaEmptyState message="'لم يصل أول طلب بعد'" actionLabel="'اختبار الربط الآن'"/>
+        <OctaEmptyState message="'لم يصل أول طلب بعد'" actionLabel="'تحقق مرة أخرى'" onAction="() => this.onRecheckForOrders()"/>
       </t>
 
       <t t-else="">

@@ -22,7 +22,15 @@
   <t t-name="octa_hub_ui.EmptyState">
     <div class="o_octa_state_block">
       <p t-esc="props.message"/>
-      <button t-if="props.actionLabel" class="btn btn-primary" t-on-click="() => props.onAction()">
+      <!-- إصلاح لعطل حقيقي مُبلَّغ من نشر فعلي على Odoo.sh حقيقي
+           (TypeError: v1.onAction is not a function): كان الزر يُعرَض
+           ويُربَط بـ`props.onAction()` بمجرد وجود actionLabel وحده — بلا
+           التحقق من أن onAction نفسها مُمرَّرة فعليًا. أي استدعاء مستقبلي
+           لهذا المكوّن بـactionLabel بلا onAction (كما حدث فعليًا في
+           dashboard.xml) كان سيعطّل الصفحة بالكامل عند أول نقرة. أُصلح
+           بشرط إضافي: الزر لا يُعرَض إلا لو onAction دالة فعلية موجودة —
+           استحالة بنيوية للعطل، لا مجرد إصلاح لموضع واحد. -->
+      <button t-if="props.actionLabel &amp;&amp; props.onAction" class="btn btn-primary" t-on-click="() => props.onAction()">
         <t t-esc="props.actionLabel"/>
       </button>
     </div>
