@@ -99,7 +99,8 @@ class Outbox:
         for item in self._items.values():
             if (item.status == OutboxStatus.PROCESSING and item.claimed_at is not None
                     and now - item.claimed_at > self.stuck_processing_timeout_seconds):
-                item.status = OutboxStatus.PENDING
+                item.status = OutboxStatus.AWAITING_CONFIRMATION
+                item.next_query_at = now
                 item.claimed_by = None
                 item.claimed_at = None
 
@@ -203,9 +204,13 @@ def run_dispatch_cycle(outbox: Outbox, worker_id: str, batch_size: int,
     for item in claimed:
         try:
             result = dispatch_fn(item.payload)
-        except Exception as e:
-            outbox.mark_failed(item.item_id, now, error=str(e))
-            failed += 1
+        except Exception:
+            outbox.mark_awaiting_confirmation(item.item_id, None, now)
+            awaiting += 1
+            continue
+        if not isinstance(result, DispatchResult):
+            outbox.mark_awaiting_confirmation(item.item_id, None, now)
+            awaiting += 1
             continue
         if result.outcome == DispatchOutcome.CONFIRMED_SUCCESS:
             outbox.mark_done(item.item_id)
