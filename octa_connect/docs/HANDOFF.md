@@ -1,3 +1,36 @@
+# Current handoff — 2026-09-22
+
+Branch: `codex/security-reliability-audit`; draft PR #1. Main remains unchanged.
+
+## Verified
+- Security/reliability batch: 190 isolated Python tests; 37 actual Odoo tests.
+- Backend orders search/reset/empty states rendered and exercised in Odoo.sh.
+- Merchant portal first build `dfb9f8ad`: 42 actual Odoo tests, zero failures/errors,
+  including five authenticated HTTP tests with a non-internal Portal user.
+- `/octa/start` is the branded entry, `/octa/portal` the authenticated merchant workspace.
+  This is separate from the Odoo backend; existing Odoo authentication is reused.
+- Read-only overview, orders, application connections and account/branches are implemented.
+- Additional tenant/branch HTTP fixtures and demo-only preview deployed in `734137cc`;
+  its 44 tests passed (including populated data isolation), but demo XML loading failed.
+  Corrected the invalid XML comment in 65fd460e: build 38489007 SUCCESS, 44 tests,
+  zero failures/errors. Dashboard, populated orders, exact search, connection flags and
+  account/branches viewed in the real browser. Screenshot delivered to the user.
+
+## Next acceptance work / unresolved
+- Explicit merchant provisioning UI + invitations and enforced multi-step verification.
+  The new entry does not implement MFA or certify email delivery.
+- Full negative ORM/RPC permission matrix, beyond portal controller domain checks.
+- Order detail/timeline, menu management/publishing, English and mobile visual acceptance.
+- Reliable transaction boundaries and real POS/provider adapters; outbound cron stays disabled.
+- Core currently loads test fixtures through its data list, not demo: separate these safely
+  before production; do not delete records on a populated database without migration planning.
+- Portal demo preview uses the existing development administrator and TEST merchant only,
+  loads under demo mode, creates no credentials, and sends no orders or mail externally.
+
+Historical notes below are retained as history and may describe superseded environment limits.
+
+---
+
 # HANDOFF — نقطة الاستئناف (بعد المراجعة الواحدة والعشرين)
 
 ## أهم ما تغيّر هذه الجولة (الواحدة والعشرون — أول عطل من نشر فعلي حقيقي)
