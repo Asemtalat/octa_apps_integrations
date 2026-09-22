@@ -1,6 +1,6 @@
 {
     "name": "Octa Hub UI",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "summary": "بوابة التاجر - نظرة عامة وقائمة الطلبات وتفاصيلها (Gate C) - أساس فقط، غير مكتمل",
     "category": "Octa Connect",
     "author": "Octa-Tech",
