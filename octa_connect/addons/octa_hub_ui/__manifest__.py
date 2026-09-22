@@ -24,4 +24,5 @@
         ],
     },
     "installable": True,
+    "demo": ["data/portal_demo.xml"],
 }

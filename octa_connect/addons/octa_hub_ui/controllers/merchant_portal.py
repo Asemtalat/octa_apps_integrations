@@ -99,8 +99,13 @@ class MerchantPortal(http.Controller):
             values['transport_labels'] = dict(Order._fields['transport_state'].selection)
             values['commercial_labels'] = dict(Order._fields['commercial_state'].selection)
         if section == 'connections' and can_connections:
+            connection_fields = ['connector_code', 'technically_connected', 'production_approved', 'branch_ready']
+            if can_branches:
+                connection_fields.append('branch_id')
+            if env['octa.hub.storefront'].has_access('read'):
+                connection_fields.append('storefront_id')
             records = Connection.search_read(scope_domain,
-                ['connector_code', 'technically_connected', 'production_approved', 'branch_ready'],
+                connection_fields,
                 offset=(page - 1) * 30, limit=31, order='id desc')
             values['connections'], values['has_next'] = records[:30], len(records) > 30
         response = request.render('octa_hub_ui.merchant_portal', values)

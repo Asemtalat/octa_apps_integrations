@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Demo-only UI fixture: no credentials or external dispatch. Never loaded
+     on a database installed with --without-demo=all. -->
+<odoo noupdate="1">
+    <record id="portal_demo_admin_membership" model="octa.hub.membership">
+        <field name="user_id" ref="base.user_admin"/>
+        <field name="party_type">merchant</field>
+        <field name="organization_id" ref="octa_hub_core.demo_org_a"/>
+        <field name="role_code">merchant_owner</field>
+        <field name="granted_by_user_id" ref="base.user_root"/>
+    </record>
+    <record id="portal_demo_order_1" model="octa.hub.order">
+        <field name="organization_id" ref="octa_hub_core.demo_org_a"/>
+        <field name="branch_id" ref="octa_hub_core.demo_branch_a_main"/>
+        <field name="connection_id" ref="octa_hub_core.demo_connection_a_main_demo"/>
+        <field name="external_order_id">DEMO-PORTAL-001</field>
+        <field name="contract_version">octa-connect-order-v1</field>
+        <field name="items_snapshot_json">[{"sku":"DEMO","quantity":1}]</field>
+        <field name="total_minor_units">3500</field>
+        <field name="currency_id" ref="base.SAR"/>
+    </record>
+    <record id="portal_demo_order_2" model="octa.hub.order">
+        <field name="organization_id" ref="octa_hub_core.demo_org_a"/>
+        <field name="branch_id" ref="octa_hub_core.demo_branch_a_main"/>
+        <field name="connection_id" ref="octa_hub_core.demo_connection_a_main_demo"/>
+        <field name="external_order_id">DEMO-PORTAL-002</field>
+        <field name="contract_version">octa-connect-order-v1</field>
+        <field name="items_snapshot_json">[{"sku":"DEMO","quantity":2}]</field>
+        <field name="total_minor_units">7000</field>
+        <field name="currency_id" ref="base.SAR"/>
+    </record>
+</odoo>
