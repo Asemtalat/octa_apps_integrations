@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Demo-only UI fixture: no credentials or external dispatch. Never loaded
-     on a database installed with --without-demo=all. -->
+     on a database installed without demonstration data. -->
 <odoo noupdate="1">
     <record id="portal_demo_admin_membership" model="octa.hub.membership">
         <field name="user_id" ref="base.user_admin"/>
