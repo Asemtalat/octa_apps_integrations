@@ -44,6 +44,32 @@ class TestTenantIsolation(TransactionCase):
         orgs_visible = self.env["octa.hub.organization"].with_user(self.user_a).search([])
         self.assertNotIn(self.org_b.id, orgs_visible.ids, "عميل A لا يجب أن يرى عميل B")
 
+    def test_membership_transfer_revokes_previous_user_group_and_context(self):
+        membership = self.env['octa.hub.membership'].search([('user_id', '=', self.user_a.id)])
+        self.user_a.active_membership_id = membership
+        replacement = self.env['res.users'].create({'name': 'Replacement', 'login': 'replacement@test.local'})
+        membership.write({'user_id': replacement.id})
+        role = self.env.ref('octa_hub_core.group_merchant_owner')
+        self.assertNotIn(role, self.user_a.group_ids)
+        self.assertIn(role, replacement.group_ids)
+        self.assertFalse(self.user_a.active_membership_id)
+
+    def test_organization_change_invalidates_warmed_record_rule(self):
+        membership = self.env['octa.hub.membership'].search([('user_id', '=', self.user_a.id)])
+        organizations = self.env['octa.hub.organization'].with_user(self.user_a)
+        self.assertIn(self.org_a, organizations.search([]))
+        membership.write({'organization_id': self.org_b.id})
+        visible = organizations.search([])
+        self.assertNotIn(self.org_a, visible)
+        self.assertIn(self.org_b, visible)
+
+    def test_deactivation_clears_active_context(self):
+        membership = self.env['octa.hub.membership'].search([('user_id', '=', self.user_a.id)])
+        self.user_a.active_membership_id = membership
+        membership.active = False
+        self.assertFalse(self.user_a.active_membership_id)
+        self.assertNotIn(self.env.ref('octa_hub_core.group_merchant_owner'), self.user_a.group_ids)
+
     def test_branch_manager_cannot_see_other_branch(self):
         manager_user = self.env["res.users"].create({"name": "BM", "login": "bm@test.local"})
         octatech_admin_user = self.env["res.users"].search([("login", "=", "identity_admin@test.local")])

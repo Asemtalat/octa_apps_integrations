@@ -11,11 +11,6 @@
 (مسجّل في docs/requirements-coverage.md وdocs/test-report.md).
 """
 import concurrent.futures
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "lib"))
-
 from idempotency import (
     InMemoryIdempotencyStore, IdempotencyOutcome, TransportState,
     CommercialState, content_hash,

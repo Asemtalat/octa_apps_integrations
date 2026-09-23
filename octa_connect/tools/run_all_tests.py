@@ -22,7 +22,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SUITES = [
     "tools/catalog_reconcile",
-    "addons/octa_hub_api/tests",
     "addons/octa_hub_api/lib",
     "tools/mock_pos",
     "addons/octa_hub_connector_demo/tests",

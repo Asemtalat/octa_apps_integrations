@@ -75,7 +75,10 @@ class OctaHubOutboxItem(models.Model):
         مجدولة بوعي، تمامًا كما في lib/outbox.py المُختبَرة)."""
         threshold = fields.Datetime.now() - __import__("datetime").timedelta(seconds=STUCK_PROCESSING_TIMEOUT_SECONDS)
         stuck = self.search([("status", "=", "processing"), ("claimed_at", "<", threshold)])
-        stuck.write({"status": "pending", "claimed_by": False, "claimed_at": False})
+        locked = stuck.try_lock_for_update()
+        locked.invalidate_recordset(["status", "claimed_at"])
+        locked.filtered(lambda item: item.status == "processing" and item.claimed_at
+                        and item.claimed_at < threshold).mark_awaiting_confirmation()
 
     @api.model
     def claim_batch(self, worker_id, batch_size=20):
@@ -151,10 +154,13 @@ class OctaHubOutboxItem(models.Model):
         for item in items:
             try:
                 result = dispatch_fn(_json.loads(item.payload_json))
-            except Exception as e:
-                item.mark_failed(error=str(e))
+            except Exception:
+                # A transport error may occur AFTER the remote side accepted.
+                # Do not persist exception strings that may contain credentials.
+                item.mark_awaiting_confirmation()
+                item.last_error = "Dispatch raised an exception; remote outcome unknown"
                 continue
-            outcome = result.get("outcome")
+            outcome = result.get("outcome") if isinstance(result, dict) else None
             if outcome == "confirmed_success":
                 item.mark_done()
             elif outcome == "confirmed_failure":
@@ -164,7 +170,8 @@ class OctaHubOutboxItem(models.Model):
             else:
                 # قيمة outcome غير معروفة — لا نخمّن، نعامله كفشل قابل لإعادة
                 # المحاولة (لا نجاح صامت لناتج لا نفهمه).
-                item.mark_failed(error=f"unknown dispatch outcome: {outcome!r}")
+                item.mark_awaiting_confirmation()
+                item.last_error = "Invalid dispatch result; remote outcome unknown"
 
     @api.model
     def run_query_batch(self, query_fn, worker_id="cron", batch_size=20):
@@ -177,6 +184,9 @@ class OctaHubOutboxItem(models.Model):
                 result = query_fn(item)
             except Exception as e:
                 item.mark_query_inconclusive(error=str(e))
+                continue
+            if not isinstance(result, dict):
+                item.mark_query_inconclusive(error="Invalid query result")
                 continue
             outcome = result.get("outcome")
             if outcome == "confirmed_success":

@@ -134,8 +134,9 @@ def test_worker_stops_after_claim_before_ack_item_becomes_reclaimable_after_time
     assert still_stuck == []
 
     recovered = outbox.claim_batch("worker-2", batch_size=10, now=20.0)
-    assert len(recovered) == 1
-    assert recovered[0].item_id == "order-1"
+    assert recovered == []
+    assert outbox.get("order-1").status == OutboxStatus.AWAITING_CONFIRMATION
+    assert outbox.claim_for_query("query-worker", 10, now=20.0)[0].item_id == "order-1"
 
 
 def test_dispatch_failure_retries_with_backoff_then_dead_letters():
@@ -156,7 +157,7 @@ def test_dispatch_failure_retries_with_backoff_then_dead_letters():
     assert outbox.get("order-1").attempt_count == 3
 
 
-def test_exception_in_dispatch_fn_is_treated_as_failure_not_crash():
+def test_exception_in_dispatch_fn_requires_query_not_resend():
     outbox = Outbox()
     outbox.enqueue("order-1", {"x": 1})
 
@@ -164,9 +165,18 @@ def test_exception_in_dispatch_fn_is_treated_as_failure_not_crash():
         raise ConnectionError("network down")
 
     result = run_dispatch_cycle(outbox, "worker-1", batch_size=10, dispatch_fn=raises)
-    assert result["failed"] == 1
-    assert outbox.get("order-1").status == OutboxStatus.PENDING
-    assert "network down" in outbox.get("order-1").last_error
+    assert result["awaiting_confirmation"] == 1
+    assert result["failed"] == 0
+    assert outbox.get("order-1").status == OutboxStatus.AWAITING_CONFIRMATION
+    assert outbox.claim_batch("another-worker", 10) == []
+
+
+def test_invalid_dispatch_result_never_triggers_blind_retry():
+    outbox = Outbox()
+    outbox.enqueue("invalid-result", {})
+    result = run_dispatch_cycle(outbox, "worker", 10, lambda payload: None)
+    assert result["awaiting_confirmation"] == 1
+    assert outbox.claim_batch("retry-worker", 10) == []
 
 
 def test_20_concurrent_workers_never_claim_the_same_item_twice():

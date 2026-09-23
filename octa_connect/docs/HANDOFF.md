@@ -1,3 +1,75 @@
+# Current checkpoint — 2026-09-23: POS integration pilot
+
+This section supersedes historical status statements below.
+
+## Verified
+- Restaurant connector branch `codex/octa-pos-connector`, commit `ddf856847f4cfdc9363d68d92123f69b30001f30`: Odoo 18 build 38542332 reports **0 failed, 0 errors of 9 tests**. Remaining warning: alert div lacks accessibility role.
+- Hub catalog importer commit `c1f9b61ce52ce23f8000b1fdb91656ce4889dba1`: Odoo 19 build 38542565 reports **0 failed, 0 errors of 52 tests** (44 existing + 8 importer tests).
+- Hub delivery pilot commit `4b3d599324b35dc17a32311590455294c39102c2` deployed in build 38542952; Odoo.sh shows Test: Warning, app menu loads. Four new delivery tests were added. Exact final test summary for this commit was NOT captured; do not claim 56 PASS.
+- Restaurant `test` fast-forwarded to ddf85684. Its existing "Update current build" setting preserved database/build 37082073; Odoo.sh shows successful update. Production main unchanged.
+- In the restaurant test database, activated developer mode and clicked Apps > Update Apps List > Update. Subsequent verification was blocked, so completion of list refresh is NOT confirmed. Connector installation on this database has NOT been demonstrated.
+
+## Precise blocker
+Browser automatic approval review failed due to account usage limit, not unsafe action or user rejection. Last blocked action: reading restaurant staging screen after Update Apps List. Do not circumvent with alternate browser surfaces or raw requests. Resume live verification only after the limit/access problem is resolved.
+
+## Resume sequence
+1. Inspect restaurant staging Apps list; search technical module `octa_pos_connector`, install only this module if not installed.
+2. Confirm first Aziziya POS config id 4 / company مطعم العزيزيه. Do not use inactive second Aziziya POS.
+3. Disable physical printer and kitchen integrations in the test configuration before any actual order exercise. Existing staging includes real printer addresses. No paid or real kitchen order is authorized by the pilot.
+4. Configure a disabled bridge scoped to this POS, export catalog and inspect actual item counts, default/Hunger/keta prices, taxes, photos and modifiers. No actual merchant menu has yet been exported/imported.
+5. Configure hub sandbox endpoint/storefront and explicit pricelist mappings; pair a scoped API key securely. No API key has yet been issued or copied.
+6. Import catalog; repeat and verify IDs/counts, changed prices and archived missing items.
+7. Prepare persisted one-item test delivery, send only to staging, verify POS draft, visible cashier notification, receipt timestamps, then repeat same delivery to confirm no duplicate. No cross-system order has yet been sent.
+8. Read complete logs for build 38542952. Newly added delivery tests mock HTTP; they do not replace real cross-system proof.
+9. Fix alert accessibility roles in both modules during next code change; rerun final tests after substantive changes.
+
+## Pilot limits / review findings
+- Manual sandbox delivery only, not production cron/worker or delivery-app connectivity.
+- Orders with modifiers, tracked items or combos are explicitly rejected pending mapping.
+- Display acknowledgment is not cashier acceptance. Timestamps are second-resolution; full stage-by-stage millisecond telemetry remains incomplete.
+- Source binding needs strengthening for order dispatch if endpoint URL/API key changes after catalog import.
+- Delivery response parser should explicitly reject non-object JSON; currently a JSON list can cause AttributeError.
+- Catalog full snapshots archive missing items, but removed modifier options and removed channel mappings still need reconciliation rules.
+- Do not expose pairing secrets or merchant data in repository documentation.
+
+## Optional Claude collaboration
+Use one feature branch per writer. Claude submits a commit SHA, changed-file list, requirement-to-test coverage and explicit NOT RUN cases. Reviewer checks the exact commit and runs Odoo acceptance tests. No simultaneous edits to the same files, no direct main pushes, and no shared production credentials. This workflow can divide work but does not guarantee lower total token usage.
+
+---
+
+# Current handoff — 2026-09-22
+
+Branch: `codex/security-reliability-audit`; draft PR #1. Main remains unchanged.
+
+## Verified
+- Security/reliability batch: 190 isolated Python tests; 37 actual Odoo tests.
+- Backend orders search/reset/empty states rendered and exercised in Odoo.sh.
+- Merchant portal first build `dfb9f8ad`: 42 actual Odoo tests, zero failures/errors,
+  including five authenticated HTTP tests with a non-internal Portal user.
+- `/octa/start` is the branded entry, `/octa/portal` the authenticated merchant workspace.
+  This is separate from the Odoo backend; existing Odoo authentication is reused.
+- Read-only overview, orders, application connections and account/branches are implemented.
+- Additional tenant/branch HTTP fixtures and demo-only preview deployed in `734137cc`;
+  its 44 tests passed (including populated data isolation), but demo XML loading failed.
+  Corrected the invalid XML comment in 65fd460e: build 38489007 SUCCESS, 44 tests,
+  zero failures/errors. Dashboard, populated orders, exact search, connection flags and
+  account/branches viewed in the real browser. Screenshot delivered to the user.
+
+## Next acceptance work / unresolved
+- Explicit merchant provisioning UI + invitations and enforced multi-step verification.
+  The new entry does not implement MFA or certify email delivery.
+- Full negative ORM/RPC permission matrix, beyond portal controller domain checks.
+- Order detail/timeline, menu management/publishing, English and mobile visual acceptance.
+- Reliable transaction boundaries and real POS/provider adapters; outbound cron stays disabled.
+- Core currently loads test fixtures through its data list, not demo: separate these safely
+  before production; do not delete records on a populated database without migration planning.
+- Portal demo preview uses the existing development administrator and TEST merchant only,
+  loads under demo mode, creates no credentials, and sends no orders or mail externally.
+
+Historical notes below are retained as history and may describe superseded environment limits.
+
+---
+
 # HANDOFF — نقطة الاستئناف (بعد المراجعة الواحدة والعشرين)
 
 ## أهم ما تغيّر هذه الجولة (الواحدة والعشرون — أول عطل من نشر فعلي حقيقي)

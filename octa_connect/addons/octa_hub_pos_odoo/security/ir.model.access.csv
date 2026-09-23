@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+endpoint_admin,endpoint admin,model_octa_hub_pos_endpoint,base.group_system,1,1,1,0
+mapping_admin,mapping admin,model_octa_hub_pos_price_mapping,base.group_system,1,1,1,1
+delivery_admin,delivery admin,model_octa_hub_pos_delivery,base.group_system,1,1,1,0

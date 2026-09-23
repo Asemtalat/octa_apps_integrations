@@ -35,6 +35,7 @@ export class OctaHubOrderList extends Component {
 
     setup() {
         this.orm = useService("orm");
+        this.requestSequence = 0;
         this.state = useState({
             loading: true,
             error: null,
@@ -43,6 +44,8 @@ export class OctaHubOrderList extends Component {
             page: 1,
             pageSize: 50, // حجم سجلات مضبوط — القسم 11
             total: 0,
+            search: "",
+            hasNext: false,
         });
         onWillStart(() => this.reload());
     }
@@ -51,6 +54,7 @@ export class OctaHubOrderList extends Component {
     commercialBadge(state) { return COMMERCIAL_LABELS[state] || ["unknown", state]; }
 
     async reload() {
+        const requestSequence = ++this.requestSequence;
         this.state.loading = true;
         this.state.error = null;
         try {
@@ -60,19 +64,49 @@ export class OctaHubOrderList extends Component {
                 this._buildDomain(),
                 ["external_order_id", "branch_id", "connection_id", "total_minor_units",
                  "currency_id", "transport_state", "commercial_state", "write_date"],
-                { limit: this.state.pageSize, offset: (this.state.page - 1) * this.state.pageSize }
+                { limit: this.state.pageSize + 1, offset: (this.state.page - 1) * this.state.pageSize,
+                  order: "id desc" }
             );
-            this.state.rows = result;
+            if (requestSequence !== this.requestSequence) return;
+            this.state.hasNext = result.length > this.state.pageSize;
+            this.state.rows = result.slice(0, this.state.pageSize);
         } catch (e) {
+            if (requestSequence !== this.requestSequence) return;
+            this.state.rows = [];
+            this.state.hasNext = false;
             this.state.error = "تعذّر تحميل قائمة الطلبات الآن";
         } finally {
-            this.state.loading = false;
+            if (requestSequence === this.requestSequence) this.state.loading = false;
         }
+    }
+
+    applyFilters() {
+        this.state.page = 1;
+        return this.reload();
+    }
+
+    resetFilters() {
+        this.state.search = "";
+        this.state.filters.state = null;
+        return this.applyFilters();
+    }
+
+    nextPage() {
+        if (this.state.loading || !this.state.hasNext) return;
+        this.state.page += 1;
+        return this.reload();
+    }
+
+    previousPage() {
+        if (this.state.loading || this.state.page <= 1) return;
+        this.state.page -= 1;
+        return this.reload();
     }
 
     _buildDomain() {
         const domain = [];
         const f = this.state.filters;
+        if (this.state.search.trim()) domain.push(["external_order_id", "=", this.state.search.trim()]);
         if (f.date_from) domain.push(["create_date", ">=", f.date_from]);
         if (f.date_to) domain.push(["create_date", "<=", f.date_to]);
         if (f.branch_id) domain.push(["branch_id", "=", f.branch_id]);
