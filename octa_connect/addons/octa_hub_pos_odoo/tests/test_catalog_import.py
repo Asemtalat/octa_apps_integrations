@@ -1,4 +1,6 @@
 from copy import deepcopy
+from unittest.mock import patch, Mock
+import requests
 from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import AccessError, ValidationError
 
@@ -16,7 +18,7 @@ class TestPosImport(TransactionCase):
         self.payload = {'contract': 'octa-pos-catalog-v1', 'currency': 'SAR', 'source_id': 'a' * 32,
             'config_id': 4, 'generated_at': '2026-09-23 10:00:00', 'default_pricelist_id': 1,
             'count': 1, 'items': [{'external_id': '17', 'name': 'Test sandwich', 'sku': 'S17', 'categories': ['Sandwiches'],
-                'prices': [{'pricelist_id': 1, 'currency': 'SAR', 'total_included_minor': 1000},
+                'prices': [{'pricelist_id': 1, 'currency': 'SAR', 'price_unit_minor': 1000, 'total_included_minor': 1000},
                            {'pricelist_id': 2, 'currency': 'SAR', 'total_included_minor': 1200}]}]}
 
     def items(self):
@@ -77,3 +79,51 @@ class TestPosImport(TransactionCase):
         public = self.env.ref('base.public_user')
         with self.assertRaises(AccessError):
             self.endpoint.with_user(public)._import_catalog(self.payload)
+
+    def delivery(self):
+        self.endpoint._import_catalog(self.payload)
+        self.endpoint.test_item_id = self.items()
+        result = self.endpoint.action_prepare_test_order()
+        return self.env['octa.hub.pos.delivery'].browse(result['res_id'])
+
+    def test_prepare_has_no_network_and_retry_queries_first(self):
+        with patch.object(type(self.endpoint), '_request') as request:
+            delivery = self.delivery()
+            request.assert_not_called()
+            receipt = {'registered': True, 'external_order_id': delivery.external_id, 'pos_order_id': 19}
+            request.side_effect = [Mock(status_code=404), Mock(status_code=200, json=lambda: receipt)]
+            delivery.action_send()
+            self.assertEqual([c.args[0] for c in request.call_args_list], ['GET', 'POST'])
+            self.assertEqual(delivery.state, 'confirmed')
+            self.assertEqual(delivery.order_id.transport_state, 'registered_confirmed')
+            self.assertEqual(delivery.order_id.commercial_state, 'new')
+            delivery.action_send()
+            self.assertEqual(request.call_count, 2)
+
+    def test_timeout_then_lookup_confirms_without_resending(self):
+        delivery = self.delivery()
+        with patch.object(type(self.endpoint), '_request') as request:
+            request.side_effect = [Mock(status_code=404), requests.Timeout()]
+            delivery.action_send()
+            self.assertEqual(delivery.state, 'unknown')
+            self.assertEqual(delivery.order_id.transport_state, 'unknown')
+            request.reset_mock()
+            receipt = {'registered': True, 'external_order_id': delivery.external_id, 'pos_order_id': 20}
+            request.side_effect = [Mock(status_code=200, json=lambda: receipt)]
+            delivery.action_send()
+            self.assertEqual(request.call_count, 1)
+            self.assertEqual(request.call_args.args[0], 'GET')
+            self.assertEqual(delivery.state, 'confirmed')
+
+    def test_mismatched_receipt_never_counts_as_success(self):
+        delivery = self.delivery()
+        response = Mock(status_code=200, json=lambda: {'registered': True, 'external_order_id': 'wrong', 'pos_order_id': 20})
+        with patch.object(type(self.endpoint), '_request', return_value=response):
+            delivery.action_send()
+        self.assertEqual(delivery.state, 'unknown')
+        self.assertNotEqual(delivery.order_id.transport_state, 'registered_confirmed')
+
+    def test_persisted_delivery_identity_cannot_be_changed(self):
+        delivery = self.delivery()
+        with self.assertRaisesRegex(ValidationError, 'immutable'):
+            delivery.write({'payload_json': '{}'})

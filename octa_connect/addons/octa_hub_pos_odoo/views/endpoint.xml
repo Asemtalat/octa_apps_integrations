@@ -5,8 +5,15 @@
       <group><field name="name"/><field name="storefront_id"/><field name="url"/><field name="api_key" password="True"/><field name="enabled"/><field name="snapshot_file"/></group>
       <group><field name="source_id"/><field name="config_id_external"/><field name="item_count"/><field name="imported_at"/><field name="source_generated_at"/></group>
       <field name="mapping_ids"><list editable="bottom"><field name="pricelist_id_external"/><field name="channel_code"/></list></field>
+      <group string="Sandbox order test"><field name="test_item_id" domain="[('storefront_id', '=', storefront_id)]"/><button name="action_prepare_test_order" type="object" string="Prepare one test order"/></group>
     </sheet></form></field></record>
   <record id="endpoint_list" model="ir.ui.view"><field name="name">octa.hub.pos.endpoint.list</field><field name="model">octa.hub.pos.endpoint</field><field name="arch" type="xml"><list><field name="name"/><field name="storefront_id"/><field name="enabled"/><field name="item_count"/><field name="imported_at"/></list></field></record>
   <record id="endpoint_action" model="ir.actions.act_window"><field name="name">POS Sandbox Connections</field><field name="res_model">octa.hub.pos.endpoint</field><field name="view_mode">list,form</field></record>
   <menuitem id="endpoint_menu" name="Octa POS Sandbox" action="endpoint_action" groups="base.group_system"/>
+  <record id="delivery_form" model="ir.ui.view"><field name="name">octa.hub.pos.delivery.form</field><field name="model">octa.hub.pos.delivery</field><field name="arch" type="xml"><form create="false" delete="false">
+    <header><button name="action_send" type="object" string="Send / reconcile test order" class="btn-primary" invisible="state == 'confirmed'"/><button name="action_refresh" type="object" string="Refresh receipt only"/><field name="state" widget="statusbar"/></header>
+    <sheet><div class="alert alert-warning">Sandbox only: creates an unpaid draft at the POS. Registration does not mean cashier acceptance or kitchen delivery. Disable test printers before sending.</div><group><field name="endpoint_id" readonly="1"/><field name="order_id" readonly="1"/><field name="external_id"/><field name="last_http_status"/><field name="last_checked_at"/></group><field name="payload_json"/><field name="receipt_json"/></sheet>
+  </form></field></record>
+  <record id="delivery_action" model="ir.actions.act_window"><field name="name">POS Test Deliveries</field><field name="res_model">octa.hub.pos.delivery</field><field name="view_mode">list,form</field></record>
+  <menuitem id="delivery_menu" name="POS Test Deliveries" action="delivery_action" groups="base.group_system"/>
 </odoo>
