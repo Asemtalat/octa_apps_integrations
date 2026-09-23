@@ -1,0 +1,12 @@
+<odoo>
+  <record id="endpoint_form" model="ir.ui.view"><field name="name">octa.hub.pos.endpoint.form</field><field name="model">octa.hub.pos.endpoint</field><field name="arch" type="xml"><form>
+    <header><button type="object" name="action_pull_catalog" string="Pull POS menu" class="btn-primary"/><button type="object" name="action_import_snapshot" string="Import snapshot"/></header>
+    <sheet><div class="alert alert-info">Sandbox pilot. Price-to-channel mappings are explicit. This screen does not activate production order dispatch.</div>
+      <group><field name="name"/><field name="storefront_id"/><field name="url"/><field name="api_key" password="True"/><field name="enabled"/><field name="snapshot_file"/></group>
+      <group><field name="source_id"/><field name="config_id_external"/><field name="item_count"/><field name="imported_at"/><field name="source_generated_at"/></group>
+      <field name="mapping_ids"><list editable="bottom"><field name="pricelist_id_external"/><field name="channel_code"/></list></field>
+    </sheet></form></field></record>
+  <record id="endpoint_list" model="ir.ui.view"><field name="name">octa.hub.pos.endpoint.list</field><field name="model">octa.hub.pos.endpoint</field><field name="arch" type="xml"><list><field name="name"/><field name="storefront_id"/><field name="enabled"/><field name="item_count"/><field name="imported_at"/></list></field></record>
+  <record id="endpoint_action" model="ir.actions.act_window"><field name="name">POS Sandbox Connections</field><field name="res_model">octa.hub.pos.endpoint</field><field name="view_mode">list,form</field></record>
+  <menuitem id="endpoint_menu" name="Octa POS Sandbox" action="endpoint_action" groups="base.group_system"/>
+</odoo>
