@@ -60,7 +60,7 @@ class Delivery(models.Model):
         vals = {'last_http_status': response.status_code, 'last_checked_at': fields.Datetime.now()}
         if response.status_code == 200:
             body = response.json()
-            if (body.get('registered') is not True or body.get('external_order_id') != self.external_id
+            if (not isinstance(body, dict) or body.get('registered') is not True or body.get('external_order_id') != self.external_id
                     or type(body.get('pos_order_id')) is not int or body['pos_order_id'] <= 0):
                 raise ValueError('Unconfirmed or mismatched receipt')
             vals.update(state='confirmed', receipt_json=json.dumps(body, ensure_ascii=False))

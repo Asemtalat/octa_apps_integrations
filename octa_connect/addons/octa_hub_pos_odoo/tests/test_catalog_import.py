@@ -127,3 +127,11 @@ class TestPosImport(TransactionCase):
         delivery = self.delivery()
         with self.assertRaisesRegex(ValidationError, 'immutable'):
             delivery.write({'payload_json': '{}'})
+
+    def test_non_object_receipt_stays_unknown(self):
+        delivery = self.delivery()
+        for body in ([], None, 'invalid'):
+            with patch.object(type(self.endpoint), '_request', return_value=Mock(status_code=200, json=lambda: body)):
+                delivery.action_send()
+            self.assertEqual(delivery.state, 'unknown')
+            self.assertEqual(delivery.order_id.transport_state, 'unknown')
