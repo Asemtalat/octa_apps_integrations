@@ -12,6 +12,7 @@ Odoo 19 + PostgreSQL في بيئة التطوير الحالية — نفس ال
 ملفات هذا المشروع. لا تُحسب PASS.
 """
 from odoo.tests.common import TransactionCase
+from odoo.tools import mute_logger
 from odoo.exceptions import ValidationError, AccessError
 import psycopg2
 
@@ -178,7 +179,7 @@ class TestCatalogModels(TransactionCase):
         group1 = self.env["octa.hub.modifier.group"].create({"name": "م1", "organization_id": self.org_a.id})
         group2 = self.env["octa.hub.modifier.group"].create({"name": "م2", "organization_id": self.org_a.id})
         self.env["octa.hub.modifier"].create({"group_id": group1.id, "name_ar": "خيار1", "external_id": "OPT-1"})
-        with self.assertRaises(psycopg2.IntegrityError):
+        with self.assertRaises(psycopg2.IntegrityError), mute_logger('odoo.sql_db'):
             with self.env.cr.savepoint():
                 self.env["octa.hub.modifier"].create(
                     {"group_id": group1.id, "name_ar": "خيار مكرر", "external_id": "OPT-1"})
@@ -192,7 +193,7 @@ class TestCatalogModels(TransactionCase):
         محمي بـcr.savepoint()، لا ValidationError."""
         self.env["octa.hub.modifier.group"].create(
             {"name": "م1", "organization_id": self.org_a.id, "external_id": "GRP-EXT-1"})
-        with self.assertRaises(psycopg2.IntegrityError):
+        with self.assertRaises(psycopg2.IntegrityError), mute_logger('odoo.sql_db'):
             with self.env.cr.savepoint():
                 self.env["octa.hub.modifier.group"].create(
                     {"name": "م2", "organization_id": self.org_a.id, "external_id": "GRP-EXT-1"})
@@ -208,7 +209,7 @@ class TestCatalogModels(TransactionCase):
             "storefront_id": self.storefront_a1.id, "name_ar": "صنف", "external_id": "SKU-DUP",
             "base_price_minor_units": 1000, "currency_id": self.sar.id,
         })
-        with self.assertRaises(psycopg2.IntegrityError):
+        with self.assertRaises(psycopg2.IntegrityError), mute_logger('odoo.sql_db'):
             with self.env.cr.savepoint():
                 self.env["octa.hub.catalog.item"].create({
                     "storefront_id": self.storefront_a1.id, "name_ar": "صنف مكرر", "external_id": "SKU-DUP",

@@ -1,6 +1,6 @@
 {
     "name": "Octa Hub Core",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "summary": "الهيئات والفروع والعضويات والصلاحيات وتفويضات الشركاء - Octa Connect Gate A/B core",
     "description": """
 Octa Hub Core

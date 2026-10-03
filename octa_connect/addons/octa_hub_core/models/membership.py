@@ -173,18 +173,28 @@ class OctaHubMembership(models.Model):
     def create(self, vals_list):
         records = super().create(vals_list)
         records._sync_security_group()
+        self.env.registry.clear_cache()
         return records
 
     def write(self, vals):
+        previous_users = self.mapped("user_id")
         result = super().write(vals)
         if "active" in vals or "role_code" in vals or "user_id" in vals:
-            self._sync_security_group()
+            (previous_users | self.mapped("user_id"))._recompute_octa_security_groups_from_active_memberships()
+        if {"active", "role_code", "user_id", "organization_id", "party_type", "branch_ids"} & vals.keys():
+            users = previous_users | self.mapped("user_id")
+            for user in users:
+                membership = user.active_membership_id
+                if membership and (not membership.active or membership.user_id != user):
+                    user.active_membership_id = False
+            self.env.registry.clear_cache()
         return result
 
     def unlink(self):
         users = self.mapped("user_id")
         result = super().unlink()
         users._recompute_octa_security_groups_from_active_memberships()
+        self.env.registry.clear_cache()
         return result
 
     def _sync_security_group(self):

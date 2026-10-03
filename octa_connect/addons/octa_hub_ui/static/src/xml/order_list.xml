@@ -3,12 +3,32 @@
   <t t-name="octa_hub_ui.OrderList">
     <div class="o_octa_app o_octa_main" dir="rtl">
       <h2>الطلبات</h2>
+      <p class="text-muted">تابع وصول الطلب وحالته التجارية بشكل مستقل.</p>
+      <form class="o_octa_order_filters" t-on-submit.prevent="applyFilters">
+        <label>رقم الطلب الخارجي
+          <input class="form-control" type="search" placeholder="بحث بالرقم المطابق تمامًا" t-model="state.search"/>
+        </label>
+        <label>حالة النقل
+          <select class="form-select" t-model="state.filters.state">
+            <option value="">كل الحالات</option>
+            <option value="stored">محفوظ</option>
+            <option value="pending_dispatch">ينتظر الإرسال</option>
+            <option value="dispatching">قيد الإرسال</option>
+            <option value="registered_confirmed">تأكد التسجيل</option>
+            <option value="unknown">النتيجة مجهولة</option>
+            <option value="needs_intervention">يحتاج تدخلًا</option>
+          </select>
+        </label>
+        <button class="btn btn-primary" type="submit" t-att-disabled="state.loading">بحث وتحديث</button>
+        <button class="btn btn-outline-secondary" type="button" t-on-click="resetFilters" t-att-disabled="state.loading">مسح الفلاتر</button>
+      </form>
 
       <OctaErrorState t-if="state.error" message="state.error"/>
       <OctaLoadingState t-elif="state.loading"/>
       <OctaEmptyState t-elif="!state.rows.length" message="'لا توجد طلبات مطابقة لهذه الفلاتر'"/>
 
-      <table class="o_octa_table" t-else="">
+      <div class="o_octa_table_scroll" t-else="">
+      <table class="o_octa_table">
         <thead>
           <tr>
             <th>رقم الطلب (خارجي)</th><th>الفرع</th><th>القناة</th>
@@ -17,16 +37,22 @@
         </thead>
         <tbody>
           <tr t-foreach="state.rows" t-as="row" t-key="row.id" t-on-click="() => this.openDetail(row.id)">
-            <td class="o_octa_ltr_isolate" t-esc="row.external_order_id"/>
+            <td><button class="btn btn-link" type="button" t-on-click.stop="() => this.openDetail(row.id)"><bdi t-esc="row.external_order_id"/></button></td>
             <td t-esc="row.branch_id[1]"/>
             <td t-esc="row.connection_id[1]"/>
-            <td class="o_octa_ltr_isolate" t-esc="row.total_minor_units / 100"/>
+            <td><bdi t-esc="(row.total_minor_units / 100).toFixed(2)"/> <span t-esc="row.currency_id[1]"/></td>
             <td><OctaStatusBadge kind="transportBadge(row.transport_state)[0]" label="transportBadge(row.transport_state)[1]"/></td>
             <td><OctaStatusBadge kind="commercialBadge(row.commercial_state)[0]" label="commercialBadge(row.commercial_state)[1]"/></td>
             <td class="o_octa_ltr_isolate" t-esc="row.write_date"/>
           </tr>
         </tbody>
       </table>
+      </div>
+      <nav class="o_octa_order_pager" aria-label="صفحات الطلبات">
+        <button type="button" class="btn btn-outline-secondary" t-on-click="previousPage" t-att-disabled="state.loading || state.page === 1">السابق</button>
+        <span aria-live="polite">صفحة <t t-esc="state.page"/> · <t t-esc="state.rows.length"/> طلبًا</span>
+        <button type="button" class="btn btn-outline-secondary" t-on-click="nextPage" t-att-disabled="state.loading || !state.hasNext">التالي</button>
+      </nav>
     </div>
   </t>
 </templates>

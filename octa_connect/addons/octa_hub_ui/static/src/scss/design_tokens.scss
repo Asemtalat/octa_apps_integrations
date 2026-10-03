@@ -74,13 +74,30 @@ $octa-bp-mobile: 480px;
 $octa-bp-tablet: 900px;
 $octa-bp-desktop: 1280px;
 
-body.o_octa_app {
+.o_octa_app {
   background: var(--octa-color-background);
   color: var(--octa-color-text);
   font-family: var(--octa-font-family-ar);
   font-size: var(--octa-font-size-body);
 }
-body.o_octa_app[dir="ltr"] { font-family: var(--octa-font-family-en); }
+.o_octa_app[dir="ltr"] { font-family: var(--octa-font-family-en); }
+
+.o_octa_app .o_octa_order_filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  padding: 16px;
+  margin-block: 20px;
+  background: var(--octa-color-surface);
+  border: 1px solid var(--octa-color-border);
+  border-radius: 10px;
+  label { display: grid; gap: 8px; flex: 1 1 220px; }
+}
+.o_octa_app .o_octa_order_pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-block: 16px; }
+.o_octa_app .o_octa_table_scroll { overflow-x: auto; }
+.o_octa_app td.o_octa_ltr_isolate { display: table-cell; }
+.o_octa_app .btn-primary { background-color: var(--octa-color-primary); border-color: var(--octa-color-primary); }
 
 .o_octa_env_banner {
   background: var(--octa-color-warning);
